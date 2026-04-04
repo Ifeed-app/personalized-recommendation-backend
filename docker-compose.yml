@@ -1,0 +1,92 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: backend_diplomski_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: video_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  user-service:
+    platform: linux/amd64
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: user_service
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      APP_PORT: 8060
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: video_platform
+    ports:
+      - "8060:8060"
+
+  content-service:
+    platform: linux/amd64
+    build:
+      context: ./services/content-service
+      dockerfile: Dockerfile
+    container_name: content_service
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      APP_PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: video_platform
+    ports:
+      - "8080:8080"
+
+  interaction-service:
+    platform: linux/amd64
+    build:
+      context: ./services/interaction-service
+      dockerfile: Dockerfile
+    container_name: interaction_service
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      APP_PORT: 8070
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: video_platform
+    ports:
+      - "8070:8070"
+
+  upload-service:
+    platform: linux/amd64
+    build:
+      context: ./services/upload-service
+      dockerfile: Dockerfile
+    container_name: upload_service
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      APP_PORT: 8050
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: video_platform
+    ports:
+      - "8050:8050"
+
+volumes:
+  postgres_data:

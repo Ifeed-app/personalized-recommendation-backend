@@ -1,0 +1,1 @@
+drop SCHEMA IF  EXISTS upload_service;
