@@ -78,3 +78,9 @@ build-interaction:
 
 build-upload:
 	docker compose build upload-service
+
+sqlc-user:
+	cd services/user-service && sqlc generate
+
+sqlc-content:
+	cd services/content-service && sqlc generate
