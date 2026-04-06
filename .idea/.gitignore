@@ -9,3 +9,4 @@
 .idea/
 /data_source_mapping.xml
 /dataSources.xml
+/sqldialects.xml
