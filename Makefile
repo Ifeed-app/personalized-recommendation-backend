@@ -10,6 +10,8 @@ CONTENT_DB_URL=$(DB_BASE)&x-migrations-table=content_service_schema_migrations
 INTERACTION_DB_URL=$(DB_BASE)&x-migrations-table=interaction_service_schema_migrations
 UPLOAD_DB_URL=$(DB_BASE)&x-migrations-table=upload_service_schema_migrations
 
+SERVICES ?= user-service content-service upload-service interaction-service
+
 migrate-user-create:
 	migrate create -ext sql -dir $(USER_MIGRATIONS) -seq $(name)
 
@@ -79,8 +81,8 @@ build-interaction:
 build-upload:
 	docker compose build upload-service
 
-sqlc-user:
-	cd services/user-service && sqlc generate
-
-sqlc-content:
-	cd services/content-service && sqlc generate
+sqlc:
+	@for service in $(SERVICES); do \
+		echo "Generating sqlc for $$service..."; \
+		(cd services/$$service && sqlc generate) || exit 1; \
+	done
