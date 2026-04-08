@@ -1,0 +1,9 @@
+go 1.25.8
+
+use (
+	./services/content-service
+	./services/interaction-service
+	./services/upload-service
+	./services/user-service
+	./proto/gen
+)
