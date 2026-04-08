@@ -5,4 +5,5 @@ use (
 	./services/interaction-service
 	./services/upload-service
 	./services/user-service
+	./proto/gen
 )

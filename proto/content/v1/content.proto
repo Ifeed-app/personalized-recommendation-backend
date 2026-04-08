@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package interaction.v1;
+
+option go_package = "backend-diplomski/proto/gen/interaction/v1;interactionv1";

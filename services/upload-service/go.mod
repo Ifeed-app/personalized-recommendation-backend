@@ -1,5 +1,4 @@
-module user-services
-
+module backend-diplomski/services/upload-service
 go 1.25.0
 
 require github.com/jackc/pgx/v5 v5.9.1
