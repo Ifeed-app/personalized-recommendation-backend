@@ -1,5 +1,4 @@
-module user-services
-
+module backend-diplomski/services/interaction-service
 go 1.25.0
 
 require (
