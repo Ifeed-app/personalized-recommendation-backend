@@ -1,4 +1,4 @@
-module user-services
+module backend-diplomski/services/content-service
 
 go 1.25.0
 

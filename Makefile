@@ -12,6 +12,10 @@ UPLOAD_DB_URL=$(DB_BASE)&x-migrations-table=upload_service_schema_migrations
 
 SERVICES ?= user-service content-service upload-service interaction-service
 
+.PHONY: proto proto-clean
+PROTO_DIR = proto
+PROTO_GEN_DIR = proto/gen
+
 migrate-user-create:
 	migrate create -ext sql -dir $(USER_MIGRATIONS) -seq $(name)
 
@@ -86,3 +90,18 @@ sqlc:
 		echo "Generating sqlc for $$service..."; \
 		(cd services/$$service && sqlc generate) || exit 1; \
 	done
+
+proto:
+	protoc \
+		-I $(PROTO_DIR) \
+		--go_out=$(PROTO_GEN_DIR) \
+		--go_opt=paths=source_relative \
+		--go-grpc_out=$(PROTO_GEN_DIR) \
+		--go-grpc_opt=paths=source_relative \
+		$(PROTO_DIR)/user/v1/*.proto \
+		$(PROTO_DIR)/content/v1/*.proto \
+		$(PROTO_DIR)/interaction/v1/*.proto \
+		$(PROTO_DIR)/upload/v1/*.proto
+
+proto-clean:
+	rm -rf $(PROTO_GEN_DIR)/*
