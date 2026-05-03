@@ -15,8 +15,8 @@ services:
   user-service:
     platform: linux/amd64
     build:
-      context: ./services/user-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/user-service/Dockerfile
     container_name: user_service
     restart: unless-stopped
     depends_on:
@@ -28,6 +28,9 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: video_platform
+      JWT_SECRET: 11a9677b3d89f57aab781e69fa2a2ab53befcb5670e60c02a1823ba0e9fa1138
+      ACCESS_TOKEN_TTL_MINUTES: 15
+      REFRESH_TOKEN_TTL_HOURS: 720
     ports:
       - "8060:8060"
 

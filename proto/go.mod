@@ -1,4 +1,4 @@
-module backend-diplomski/services/content-service
+module backend-diplomski/proto
 
 go 1.25.8
 
