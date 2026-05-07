@@ -110,3 +110,57 @@ func (s *AuthServer) SignUp(ctx context.Context, req *userv1.SignUpRequest) (*us
 		},
 	}, nil
 }
+
+func (s *AuthServer) SignIn(ctx context.Context, req *userv1.SignInRequest) (*userv1.SignInResponse, error) {
+	email := strings.TrimSpace(strings.ToLower(req.GetEmail()))
+	password := req.GetPassword()
+
+	if email == "" || password == "" {
+		return nil, status.Error(codes.InvalidArgument, "Password or email are required")
+	}
+	dbUser, err := s.queries.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "Invalid email or password")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(password)); err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid email or password")
+	}
+	accessToken, err := s.jwtManager.GenerateToken(uuid.UUID(dbUser.ID.Bytes).String(), dbUser.Email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to generate access token %v", err)
+	}
+
+	refreshToken, err := auth.GenerateRefreshToken()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to generate refresh token %v ", err)
+	}
+
+	refreshTokenID := uuid.New()
+	refreshExpiresAt := time.Now().Add(time.Duration(s.cgf.RefreshTokenTTLHours) * time.Hour)
+	_, err = s.queries.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
+		ID: pgtype.UUID{
+			Bytes: [16]byte(refreshTokenID),
+			Valid: true,
+		},
+		UserID: dbUser.ID,
+		Token:  refreshToken,
+		ExpiresAt: pgtype.Timestamptz{
+			Time:  refreshExpiresAt,
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to store refresh token: %v", err)
+	}
+
+	return &userv1.SignInResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		UserInfo: &userv1.UserInfo{
+			Id:       uuid.UUID(dbUser.ID.Bytes).String(),
+			Email:    dbUser.Email,
+			Username: dbUser.Username,
+		},
+	}, nil
+}
