@@ -17,4 +17,4 @@ WHERE token = $1;
 -- name: RevokeRefreshToken :exec
 UPDATE user_service.refresh_tokens
 SET revoked_at = NOW()
-WHERE id = $1;
+WHERE token = $1;

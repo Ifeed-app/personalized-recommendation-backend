@@ -13,7 +13,7 @@ UPLOAD_DB_URL=$(DB_BASE)&x-migrations-table=upload_service_schema_migrations
 SERVICES ?= user-service content-service upload-service interaction-service
 
 .PHONY: proto proto-clean
-PROTO_DIR = proto
+PROTO_DIR = ../proto-diplomski
 PROTO_GEN_DIR = proto/gen
 
 migrate-user-create:
