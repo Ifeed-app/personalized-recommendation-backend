@@ -43,6 +43,7 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
+      - minio
     environment:
       APP_PORT: 8080
       DB_HOST: postgres
@@ -50,6 +51,12 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: video_platform
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin123
+      S3_BUCKET: feeder-media
+      S3_REGION: us-east-1
+      S3_USE_SSL: false
     ports:
       - "8080:8080"
 
@@ -81,6 +88,7 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
+      - minio
     environment:
       APP_PORT: 8050
       DB_HOST: postgres
@@ -88,8 +96,28 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: video_platform
+      S3_ENDPOINT: minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin123
+      S3_BUCKET: feederbucket
+      S3_REGION: us-east-1
+      S3_USE_SSL: false
     ports:
       - "8050:8050"
 
+  minio:
+    image: minio/minio:latest
+    container_name: feeder_minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data:/data
+
 volumes:
   postgres_data:
+  minio_data:
