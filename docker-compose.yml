@@ -118,6 +118,35 @@ services:
     volumes:
       - minio_data:/data
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: feeder_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  video-fetcher-worker:
+    platform: linux/amd64
+    build:
+      context: ./services/video-worker
+      dockerfile: Dockerfile
+    container_name: video__worker
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+      - upload-service
+    environment:
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      RABBITMQ_SHORT_VIDEO_QUEUE: ${RABBITMQ_SHORT_VIDEO_QUEUE}
+      UPLOAD_SERVICE_URL: http://upload-service:${UPLOAD_SERVICE_PORT}
+
 volumes:
   postgres_data:
   minio_data:
+  rabbitmq_data:
