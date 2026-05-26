@@ -6,20 +6,26 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"video-worker/internal/downloader"
 	"video-worker/internal/message"
+	"video-worker/internal/providers/pexels"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Conusmer struct {
-	rabbitURL string
-	queueName string
+	rabbitURL    string
+	queueName    string
+	pexelsClient *pexels.Client
+	downloader   *downloader.Downloader
 }
 
-func NewConusmer(rabbitURL string, queueName string) *Conusmer {
+func NewConusmer(rabbitURL string, queueName string, pexelsClient *pexels.Client, downloader *downloader.Downloader) *Conusmer {
 	return &Conusmer{
-		rabbitURL: rabbitURL,
-		queueName: queueName,
+		rabbitURL:    rabbitURL,
+		queueName:    queueName,
+		pexelsClient: pexelsClient,
+		downloader:   downloader,
 	}
 }
 
@@ -106,20 +112,95 @@ func (c *Conusmer) connectWithRetry() (*amqp.Connection, error) {
 }
 
 func (c *Conusmer) handleMessage(delivery amqp.Delivery) error {
+	log.Printf("raw msg received: %s", string(delivery.Body))
+
 	var msg message.ShortVideoFetchMessage
-	log.Printf("raw msg recieved:%s", string(delivery.Body))
 	if err := json.Unmarshal(delivery.Body, &msg); err != nil {
-		return fmt.Errorf("invalid msg json:%w", err)
+		return fmt.Errorf("invalid message JSON: %w", err)
 	}
-	if msg.VideoURL == "" {
-		return fmt.Errorf("videoURL is required")
+
+	if msg.Provider == "" {
+		msg.Provider = "pexels"
 	}
-	log.Println("short video fetch message received")
-	log.Printf("jobId: %s", msg.JobID)
-	log.Printf("source: %s", msg.Source)
-	log.Printf("videoUrl: %s", msg.VideoURL)
-	log.Printf("title: %s", msg.Title)
-	log.Printf("description: %s", msg.Description)
+
+	if msg.Provider != "pexels" {
+		return fmt.Errorf("unsupported provider: %s", msg.Provider)
+	}
+
+	if msg.Query == "" {
+		return fmt.Errorf("query is required")
+	}
+
+	if msg.Orientation == "" {
+		msg.Orientation = "portrait"
+	}
+
+	if msg.Limit <= 0 {
+		msg.Limit = 10
+	}
+
+	if msg.Page <= 0 {
+		msg.Page = 1
+	}
+
+	if msg.MaxDurationSeconds <= 0 {
+		msg.MaxDurationSeconds = 120
+	}
+
+	if msg.MinDurationSeconds <= 0 {
+		msg.MinDurationSeconds = 3
+	}
+
+	log.Printf(
+		"searching Pexels videos: jobId=%s query=%s orientation=%s limit=%d page=%d duration=%d-%d",
+		msg.JobID,
+		msg.Query,
+		msg.Orientation,
+		msg.Limit,
+		msg.Page,
+		msg.MinDurationSeconds,
+		msg.MaxDurationSeconds,
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+
+	videos, err := c.pexelsClient.SearchVideos(ctx, pexels.SearchParams{
+		Query:              msg.Query,
+		Orientation:        msg.Orientation,
+		Limit:              msg.Limit,
+		Page:               msg.Page,
+		MinDurationSeconds: msg.MinDurationSeconds,
+		MaxDurationSeconds: msg.MaxDurationSeconds,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to search Pexels videos: %w", err)
+	}
+
+	log.Printf("Pexels returned %d usable videos", len(videos))
+
+	for _, video := range videos {
+		log.Printf(
+			"video externalId=%s duration=%ds size=%dx%d author=%s url=%s",
+			video.ExternalID,
+			video.DurationSec,
+			video.Width,
+			video.Height,
+			video.Author,
+			video.VideoURL,
+		)
+		downloadedVideo, err := c.downloader.Download(ctx, video.VideoURL)
+		if err != nil {
+			log.Printf("failed o download video externalID=%v", err)
+			continue
+		}
+		log.Printf(
+			"downloaded video externalId=%s contentType=%s sizeBytes=%d",
+			video.ExternalID,
+			downloadedVideo.ContentType,
+			downloadedVideo.SizeBytes,
+		)
+	}
 
 	return nil
 }
