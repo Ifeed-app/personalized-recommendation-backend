@@ -1,13 +1,18 @@
 package main
 
 import (
+	uploadv1 "backend-diplomski/proto/gen/upload/v1"
+	"backend-diplomski/services/upload-service/db/sqlc"
 	"backend-diplomski/services/upload-service/internal/config"
+	"backend-diplomski/services/upload-service/internal/db"
 	"backend-diplomski/services/upload-service/internal/storage"
+	"backend-diplomski/services/upload-service/internal/upload_grpc"
 	"context"
-	"encoding/json"
 	"log"
-	"net/http"
+	"net"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -19,40 +24,40 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize bucket")
 	}
+	pool, err := db.NewPool(cfg)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer pool.Close()
+
+	queries := sqlc.New(pool)
+	_ = queries
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := minioStorage.EnsureBucket(ctx); err != nil {
-		log.Fatalf("Failed to ensure bucket: %V", err)
+		log.Fatalf("Failed to ensure bucket: %v", err)
 	}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("upload-service ok"))
-	})
-
-	mux.HandleFunc("/internal/test-upload", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
-		defer cancel()
-		objectKey, err := minioStorage.UploadTestFile(ctx)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		response := map[string]string{
-			"message":   "test file uploaded successfully",
-			"bucket":    cfg.S3Bucket,
-			"objectKey": objectKey,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(response)
-	})
-
+	startGRPCServer(cfg.GRPCPort, minioStorage, queries)
 	log.Printf("upload-service listening on port %s", cfg.AppPort)
 
-	if err := http.ListenAndServe(":"+cfg.AppPort, mux); err != nil {
-		log.Fatal(err)
+}
+
+func startGRPCServer(port string, minioStorage *storage.MinioStorage, queries *sqlc.Queries) {
+	listener, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Fatalf("failed to listen on gRPC port %s: %v", port, err)
+	}
+
+	server := grpc.NewServer()
+
+	uploadv1.RegisterUploadServiceServer(
+		server,
+		upload_grpc.NewUploadServer(minioStorage, queries),
+	)
+
+	log.Printf("upload-service gRPC listening on port %s", port)
+
+	if err := server.Serve(listener); err != nil {
+		log.Fatalf("failed to serve gRPC: %v", err)
 	}
 }

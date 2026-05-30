@@ -92,7 +92,7 @@ func (s *FetchScheduler) publishBatch(ctx context.Context) {
 			MaxDurationSeconds: s.maxDuration,
 		}
 
-		publishCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		publishCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		err := s.publisher.PublishFetchJob(publishCtx, msg)
 		cancel()
 

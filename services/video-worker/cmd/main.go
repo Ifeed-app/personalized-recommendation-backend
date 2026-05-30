@@ -11,6 +11,7 @@ import (
 	"video-worker/internal/providers/pexels"
 	"video-worker/internal/rabbit"
 	"video-worker/internal/scheduler"
+	"video-worker/internal/upload"
 )
 
 func main() {
@@ -28,11 +29,18 @@ func main() {
 	defer stop()
 	pexelsClient := pexels.NewClient(cfg.PexelsAPIKey, cfg.PexelsAPIURL)
 	videoDownloader := downloader.NewDownloader()
+	uploadClient, err := upload.NewCLient(cfg.UploadServiceGRPCURL)
+	if err != nil {
+		log.Fatalf("failed to create uploade service client : %w", err)
+	}
+	defer uploadClient.Close()
+
 	consumer := rabbit.NewConusmer(
 		cfg.RabbitMQURL,
 		cfg.RabbitMQShortVideoQueue,
 		pexelsClient,
 		videoDownloader,
+		uploadClient,
 	)
 	if cfg.VideoFetchAutoStart {
 		publisher := rabbit.NewPublisher(
