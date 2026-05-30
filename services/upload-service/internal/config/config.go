@@ -22,6 +22,8 @@ type Config struct {
 	S3Bucket    string
 	S3Region    string
 	S3UseSSL    bool
+
+	GRPCPort string
 }
 
 func Load() (*Config, error) {
@@ -42,6 +44,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("S3_BUCKET", "feeder-media")
 	viper.SetDefault("S3_REGION", "us-east-1")
 	viper.SetDefault("S3_USE_SSL", false)
+	viper.SetDefault("GRPC_PORT", "9050")
 
 	cfg := &Config{
 		AppPort: viper.GetString("APP_PORT"),
@@ -58,6 +61,7 @@ func Load() (*Config, error) {
 		S3Bucket:    viper.GetString("S3_BUCKET"),
 		S3Region:    viper.GetString("S3_REGION"),
 		S3UseSSL:    viper.GetBool("S3_USE_SSL"),
+		GRPCPort:    viper.GetString("GRPC_PORT"),
 	}
 
 	if cfg.S3Endpoint == "" {

@@ -82,8 +82,8 @@ services:
   upload-service:
     platform: linux/amd64
     build:
-      context: ./services/upload-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/upload-service/Dockerfile
     container_name: upload_service
     restart: unless-stopped
     depends_on:
@@ -102,6 +102,7 @@ services:
       S3_BUCKET: ${S3_BUCKET}
       S3_REGION: ${S3_REGION}
       S3_USE_SSL: ${S3_USE_SSL}
+      GRPC_PORT : ${GRPC_PORT}
     ports:
       - "${UPLOAD_SERVICE_PORT}:${UPLOAD_SERVICE_PORT}"
 
@@ -130,17 +131,24 @@ services:
       - "${RABBITMQ_MANAGEMENT_PORT}:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+       interval: 5s
+       timeout: 5s
+       retries: 10
 
   video-fetcher-worker:
     platform: linux/amd64
     build:
-      context: ./services/video-worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/video-worker/Dockerfile
     container_name: video__worker
     restart: unless-stopped
     depends_on:
-      - rabbitmq
-      - upload-service
+       rabbitmq :
+          condition: service_healthy
+       upload-service :
+          condition: service_started
     environment:
       RABBITMQ_URL: ${RABBITMQ_URL}
       RABBITMQ_SHORT_VIDEO_QUEUE: ${RABBITMQ_SHORT_VIDEO_QUEUE}
@@ -155,6 +163,7 @@ services:
       VIDEO_FETCH_ORIENTATION: ${VIDEO_FETCH_ORIENTATION}
       VIDEO_FETCH_MIN_DURATION_SECONDS: ${VIDEO_FETCH_MIN_DURATION_SECONDS}
       VIDEO_FETCH_MAX_DURATION_SECONDS: ${VIDEO_FETCH_MAX_DURATION_SECONDS}
+      UPLOAD_SERVICE_GRPC_URL: ${UPLOAD_SERVICE_GRPC_URL}
 
 volumes:
   postgres_data:

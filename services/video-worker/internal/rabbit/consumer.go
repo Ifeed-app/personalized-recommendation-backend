@@ -9,6 +9,7 @@ import (
 	"video-worker/internal/downloader"
 	"video-worker/internal/message"
 	"video-worker/internal/providers/pexels"
+	"video-worker/internal/upload"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -18,14 +19,16 @@ type Conusmer struct {
 	queueName    string
 	pexelsClient *pexels.Client
 	downloader   *downloader.Downloader
+	uploadClient *upload.Client
 }
 
-func NewConusmer(rabbitURL string, queueName string, pexelsClient *pexels.Client, downloader *downloader.Downloader) *Conusmer {
+func NewConusmer(rabbitURL string, queueName string, pexelsClient *pexels.Client, downloader *downloader.Downloader, uploadClient *upload.Client) *Conusmer {
 	return &Conusmer{
 		rabbitURL:    rabbitURL,
 		queueName:    queueName,
 		pexelsClient: pexelsClient,
 		downloader:   downloader,
+		uploadClient: uploadClient,
 	}
 }
 
@@ -194,11 +197,24 @@ func (c *Conusmer) handleMessage(delivery amqp.Delivery) error {
 			log.Printf("failed o download video externalID=%v", err)
 			continue
 		}
+		uploadResult, err := c.uploadClient.UploadVideo(ctx, upload.UploadVideoInput{
+			Source:      video.Source,
+			ExternalID:  video.ExternalID,
+			FileName:    video.ExternalID + ".mp4",
+			ContentType: downloadedVideo.ContentType,
+			ObjectKey:   fmt.Sprintf("videos/imported/%s/%s/original.mp4", video.Source, video.ExternalID),
+			Data:        downloadedVideo.Data,
+		})
+		if err != nil {
+			log.Printf("failed to upload video externalID=%s : %v", video.ExternalID, err)
+			continue
+		}
 		log.Printf(
-			"downloaded video externalId=%s contentType=%s sizeBytes=%d",
+			"downloaded video externalId=%s bucket=%s objectKey=%s sizeBytes=%d",
 			video.ExternalID,
-			downloadedVideo.ContentType,
-			downloadedVideo.SizeBytes,
+			uploadResult.Bucket,
+			uploadResult.ObjectKey,
+			uploadResult.SizeBytes,
 		)
 	}
 

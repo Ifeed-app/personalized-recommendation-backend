@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -20,19 +21,313 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type UploadVideoMetaData struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
+	ExternalId    string                 `protobuf:"bytes,2,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	FileName      string                 `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	ContentType   string                 `protobuf:"bytes,4,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	ObjectKey     string                 `protobuf:"bytes,5,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadVideoMetaData) Reset() {
+	*x = UploadVideoMetaData{}
+	mi := &file_upload_v1_upload_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadVideoMetaData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadVideoMetaData) ProtoMessage() {}
+
+func (x *UploadVideoMetaData) ProtoReflect() protoreflect.Message {
+	mi := &file_upload_v1_upload_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadVideoMetaData.ProtoReflect.Descriptor instead.
+func (*UploadVideoMetaData) Descriptor() ([]byte, []int) {
+	return file_upload_v1_upload_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *UploadVideoMetaData) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *UploadVideoMetaData) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *UploadVideoMetaData) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *UploadVideoMetaData) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *UploadVideoMetaData) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+type UploadVideoRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*UploadVideoRequest_Metadata
+	//	*UploadVideoRequest_Chunk
+	Payload       isUploadVideoRequest_Payload `protobuf_oneof:"payload"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadVideoRequest) Reset() {
+	*x = UploadVideoRequest{}
+	mi := &file_upload_v1_upload_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadVideoRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadVideoRequest) ProtoMessage() {}
+
+func (x *UploadVideoRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_upload_v1_upload_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadVideoRequest.ProtoReflect.Descriptor instead.
+func (*UploadVideoRequest) Descriptor() ([]byte, []int) {
+	return file_upload_v1_upload_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *UploadVideoRequest) GetPayload() isUploadVideoRequest_Payload {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *UploadVideoRequest) GetMetadata() *UploadVideoMetaData {
+	if x != nil {
+		if x, ok := x.Payload.(*UploadVideoRequest_Metadata); ok {
+			return x.Metadata
+		}
+	}
+	return nil
+}
+
+func (x *UploadVideoRequest) GetChunk() []byte {
+	if x != nil {
+		if x, ok := x.Payload.(*UploadVideoRequest_Chunk); ok {
+			return x.Chunk
+		}
+	}
+	return nil
+}
+
+type isUploadVideoRequest_Payload interface {
+	isUploadVideoRequest_Payload()
+}
+
+type UploadVideoRequest_Metadata struct {
+	Metadata *UploadVideoMetaData `protobuf:"bytes,1,opt,name=metadata,proto3,oneof"`
+}
+
+type UploadVideoRequest_Chunk struct {
+	Chunk []byte `protobuf:"bytes,2,opt,name=chunk,proto3,oneof"`
+}
+
+func (*UploadVideoRequest_Metadata) isUploadVideoRequest_Payload() {}
+
+func (*UploadVideoRequest_Chunk) isUploadVideoRequest_Payload() {}
+
+type UploadVideoResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Bucket           string                 `protobuf:"bytes,1,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	ObjectKey        string                 `protobuf:"bytes,2,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
+	MimeType         string                 `protobuf:"bytes,3,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
+	SizeBytes        int64                  `protobuf:"varint,4,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	OriginalFileName string                 `protobuf:"bytes,5,opt,name=original_file_name,json=originalFileName,proto3" json:"original_file_name,omitempty"`
+	UploadId         string                 `protobuf:"bytes,6,opt,name=upload_id,json=uploadId,proto3" json:"upload_id,omitempty"`
+	AssetId          string                 `protobuf:"bytes,7,opt,name=asset_id,json=assetId,proto3" json:"asset_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *UploadVideoResponse) Reset() {
+	*x = UploadVideoResponse{}
+	mi := &file_upload_v1_upload_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadVideoResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadVideoResponse) ProtoMessage() {}
+
+func (x *UploadVideoResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_upload_v1_upload_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadVideoResponse.ProtoReflect.Descriptor instead.
+func (*UploadVideoResponse) Descriptor() ([]byte, []int) {
+	return file_upload_v1_upload_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *UploadVideoResponse) GetBucket() string {
+	if x != nil {
+		return x.Bucket
+	}
+	return ""
+}
+
+func (x *UploadVideoResponse) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *UploadVideoResponse) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
+}
+
+func (x *UploadVideoResponse) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *UploadVideoResponse) GetOriginalFileName() string {
+	if x != nil {
+		return x.OriginalFileName
+	}
+	return ""
+}
+
+func (x *UploadVideoResponse) GetUploadId() string {
+	if x != nil {
+		return x.UploadId
+	}
+	return ""
+}
+
+func (x *UploadVideoResponse) GetAssetId() string {
+	if x != nil {
+		return x.AssetId
+	}
+	return ""
+}
+
 var File_upload_v1_upload_proto protoreflect.FileDescriptor
 
 const file_upload_v1_upload_proto_rawDesc = "" +
 	"\n" +
-	"\x16upload/v1/upload.proto\x12\tupload.v1B0Z.backend-diplomski/proto/gen/upload/v1;uploadv1b\x06proto3"
+	"\x16upload/v1/upload.proto\x12\tupload.v1\"\xad\x01\n" +
+	"\x13UploadVideoMetaData\x12\x16\n" +
+	"\x06source\x18\x01 \x01(\tR\x06source\x12\x1f\n" +
+	"\vexternal_id\x18\x02 \x01(\tR\n" +
+	"externalId\x12\x1b\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\x12!\n" +
+	"\fcontent_type\x18\x04 \x01(\tR\vcontentType\x12\x1d\n" +
+	"\n" +
+	"object_key\x18\x05 \x01(\tR\tobjectKey\"u\n" +
+	"\x12UploadVideoRequest\x12<\n" +
+	"\bmetadata\x18\x01 \x01(\v2\x1e.upload.v1.UploadVideoMetaDataH\x00R\bmetadata\x12\x16\n" +
+	"\x05chunk\x18\x02 \x01(\fH\x00R\x05chunkB\t\n" +
+	"\apayload\"\xee\x01\n" +
+	"\x13UploadVideoResponse\x12\x16\n" +
+	"\x06bucket\x18\x01 \x01(\tR\x06bucket\x12\x1d\n" +
+	"\n" +
+	"object_key\x18\x02 \x01(\tR\tobjectKey\x12\x1b\n" +
+	"\tmime_type\x18\x03 \x01(\tR\bmimeType\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x04 \x01(\x03R\tsizeBytes\x12,\n" +
+	"\x12original_file_name\x18\x05 \x01(\tR\x10originalFileName\x12\x1b\n" +
+	"\tupload_id\x18\x06 \x01(\tR\buploadId\x12\x19\n" +
+	"\basset_id\x18\a \x01(\tR\aassetId2_\n" +
+	"\rUploadService\x12N\n" +
+	"\vUploadVideo\x12\x1d.upload.v1.UploadVideoRequest\x1a\x1e.upload.v1.UploadVideoResponse(\x01B0Z.backend-diplomski/proto/gen/upload/v1;uploadv1b\x06proto3"
 
-var file_upload_v1_upload_proto_goTypes = []any{}
+var (
+	file_upload_v1_upload_proto_rawDescOnce sync.Once
+	file_upload_v1_upload_proto_rawDescData []byte
+)
+
+func file_upload_v1_upload_proto_rawDescGZIP() []byte {
+	file_upload_v1_upload_proto_rawDescOnce.Do(func() {
+		file_upload_v1_upload_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_upload_v1_upload_proto_rawDesc), len(file_upload_v1_upload_proto_rawDesc)))
+	})
+	return file_upload_v1_upload_proto_rawDescData
+}
+
+var file_upload_v1_upload_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_upload_v1_upload_proto_goTypes = []any{
+	(*UploadVideoMetaData)(nil), // 0: upload.v1.UploadVideoMetaData
+	(*UploadVideoRequest)(nil),  // 1: upload.v1.UploadVideoRequest
+	(*UploadVideoResponse)(nil), // 2: upload.v1.UploadVideoResponse
+}
 var file_upload_v1_upload_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: upload.v1.UploadVideoRequest.metadata:type_name -> upload.v1.UploadVideoMetaData
+	1, // 1: upload.v1.UploadService.UploadVideo:input_type -> upload.v1.UploadVideoRequest
+	2, // 2: upload.v1.UploadService.UploadVideo:output_type -> upload.v1.UploadVideoResponse
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_upload_v1_upload_proto_init() }
@@ -40,18 +335,23 @@ func file_upload_v1_upload_proto_init() {
 	if File_upload_v1_upload_proto != nil {
 		return
 	}
+	file_upload_v1_upload_proto_msgTypes[1].OneofWrappers = []any{
+		(*UploadVideoRequest_Metadata)(nil),
+		(*UploadVideoRequest_Chunk)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_upload_v1_upload_proto_rawDesc), len(file_upload_v1_upload_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   3,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_upload_v1_upload_proto_goTypes,
 		DependencyIndexes: file_upload_v1_upload_proto_depIdxs,
+		MessageInfos:      file_upload_v1_upload_proto_msgTypes,
 	}.Build()
 	File_upload_v1_upload_proto = out.File
 	file_upload_v1_upload_proto_goTypes = nil
