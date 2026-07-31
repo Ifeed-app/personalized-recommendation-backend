@@ -5,6 +5,7 @@ import (
 	"backend-diplomski/services/upload-service/db/sqlc"
 	"backend-diplomski/services/upload-service/internal/storage"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -91,6 +94,27 @@ func (s *UploadServer) UploadVideo(stream uploadv1.UploadService_UploadVideoServ
 	if sizeBytes == 0 {
 		return fmt.Errorf("uploaded video is empty")
 	}
+	existingAsset, err := s.queries.GetMediaAssetByStorageKey(stream.Context(), objectKey)
+	if err == nil {
+		log.Printf(
+			"media asset already exists objectKey=%s assetID=%v uploadID=%v",
+			objectKey,
+			existingAsset.ID,
+			existingAsset.UploadID,
+		)
+		return stream.SendAndClose(&uploadv1.UploadVideoResponse{
+			Bucket:           s.storage.Bucket(),
+			ObjectKey:        existingAsset.StorageKey,
+			MimeType:         existingAsset.MimeType,
+			SizeBytes:        existingAsset.SizeBytes,
+			OriginalFileName: existingAsset.FileName,
+			UploadId:         uuid.UUID(existingAsset.UploadID.Bytes).String(),
+			AssetId:          uuid.UUID(existingAsset.ID.Bytes).String(),
+		})
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("failed to check existing media asset: %w", err)
+	}
 	uploadID := uuid.New()
 	uploadRecord, err := s.queries.CreateUpload(stream.Context(), sqlc.CreateUploadParams{
 		ID:         toPgUUID(uploadID),
@@ -107,6 +131,7 @@ func (s *UploadServer) UploadVideo(stream uploadv1.UploadService_UploadVideoServ
 			ID:     uploadRecord.ID,
 			Status: "FAILED",
 		})
+
 		return fmt.Errorf("failed to upload object to MinIO: %w", err)
 	}
 
@@ -130,12 +155,38 @@ func (s *UploadServer) UploadVideo(stream uploadv1.UploadService_UploadVideoServ
 		Status:     "COMPLETED",
 	})
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			existingAsset, getErr := s.queries.GetMediaAssetByStorageKey(stream.Context(), objectKey)
+			if getErr == nil {
+				log.Printf("media asset already created by another request objectKey=%s assetID=%v uploadID=%v",
+					objectKey,
+					existingAsset.ID,
+					existingAsset.UploadID,
+				)
+				_, _ = s.queries.UpdateUploadStatus(stream.Context(), sqlc.UpdateUploadStatusParams{
+					ID:     uploadRecord.ID,
+					Status: "COMPLETED",
+				})
+				return stream.SendAndClose(&uploadv1.UploadVideoResponse{
+					Bucket:           s.storage.Bucket(),
+					ObjectKey:        existingAsset.StorageKey,
+					MimeType:         existingAsset.MimeType,
+					SizeBytes:        existingAsset.SizeBytes,
+					OriginalFileName: existingAsset.FileName,
+					UploadId:         uuid.UUID(existingAsset.UploadID.Bytes).String(),
+					AssetId:          uuid.UUID(existingAsset.ID.Bytes).String(),
+				})
+			}
+		}
 		_, _ = s.queries.UpdateUploadStatus(stream.Context(), sqlc.UpdateUploadStatusParams{
 			ID:     uploadRecord.ID,
 			Status: "FAILED",
 		})
-		return fmt.Errorf("failed to create media asset record: %w", err)
+
+		return fmt.Errorf("failed to create media asset record:%w", err)
 	}
+
 	_, err = s.queries.UpdateUploadStatus(stream.Context(), sqlc.UpdateUploadStatusParams{
 		ID:     uploadRecord.ID,
 		Status: "COMPLETED",
