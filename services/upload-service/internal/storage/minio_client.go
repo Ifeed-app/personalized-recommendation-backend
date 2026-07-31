@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -72,4 +73,31 @@ func (s *MinioStorage) UploadTestFile(ctx context.Context) (string, error) {
 	}
 
 	return objectKey, nil
+}
+
+func (s *MinioStorage) UploadObject(ctx context.Context, objectKey string, reader io.Reader, size int64, contentType string) error {
+	if objectKey == "" {
+		return fmt.Errorf("object key is req")
+	}
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	_, err := s.client.PutObject(
+		ctx,
+		s.bucket,
+		objectKey,
+		reader,
+		size,
+		minio.PutObjectOptions{
+			ContentType: contentType,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to upload object to MinIO: %w", err)
+	}
+	return nil
+}
+
+func (s *MinioStorage) Bucket() string {
+	return s.bucket
 }
