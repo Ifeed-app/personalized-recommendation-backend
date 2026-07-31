@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 	"video-worker/internal/config"
+	"video-worker/internal/content"
 	"video-worker/internal/downloader"
 	"video-worker/internal/providers/pexels"
 	"video-worker/internal/rabbit"
@@ -35,17 +36,25 @@ func main() {
 	}
 	defer uploadClient.Close()
 
+	contentClient, err := content.NewClient(cfg.ContentServiceGRPCURL)
+	if err != nil {
+		log.Fatalf("failed to create content-service client : %v", err)
+	}
+	defer contentClient.Close()
+
 	consumer := rabbit.NewConusmer(
 		cfg.RabbitMQURL,
 		cfg.RabbitMQShortVideoQueue,
 		pexelsClient,
 		videoDownloader,
 		uploadClient,
+		contentClient,
 	)
 	if cfg.VideoFetchAutoStart {
 		publisher := rabbit.NewPublisher(
 			cfg.RabbitMQURL,
-			cfg.RabbitMQShortVideoQueue)
+			cfg.RabbitMQShortVideoQueue,
+		)
 
 		fetchScheduler := scheduler.NewFetchScheduler(
 			publisher,
@@ -56,10 +65,12 @@ func main() {
 			cfg.VideoFetchMinDurationSeconds,
 			cfg.VideoFetchMaxDurationSeconds,
 		)
-		go fetchScheduler.Start(ctx)
-	}
-	log.Println("video fetcher scheduler disabled")
 
+		log.Println("video fetcher scheduler enabled")
+		go fetchScheduler.Start(ctx)
+	} else {
+		log.Println("video fetcher scheduler disabled")
+	}
 	if err := consumer.Start(ctx); err != nil {
 		log.Fatalf("consumer stopped with error:%v", err)
 	}
