@@ -6,26 +6,32 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"video-worker/internal/content"
 	"video-worker/internal/downloader"
 	"video-worker/internal/message"
 	"video-worker/internal/providers/pexels"
+	"video-worker/internal/upload"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Conusmer struct {
-	rabbitURL    string
-	queueName    string
-	pexelsClient *pexels.Client
-	downloader   *downloader.Downloader
+	rabbitURL     string
+	queueName     string
+	pexelsClient  *pexels.Client
+	downloader    *downloader.Downloader
+	uploadClient  *upload.Client
+	contentClient *content.Client
 }
 
-func NewConusmer(rabbitURL string, queueName string, pexelsClient *pexels.Client, downloader *downloader.Downloader) *Conusmer {
+func NewConusmer(rabbitURL string, queueName string, pexelsClient *pexels.Client, downloader *downloader.Downloader, uploadClient *upload.Client, contentClient *content.Client) *Conusmer {
 	return &Conusmer{
-		rabbitURL:    rabbitURL,
-		queueName:    queueName,
-		pexelsClient: pexelsClient,
-		downloader:   downloader,
+		rabbitURL:     rabbitURL,
+		queueName:     queueName,
+		pexelsClient:  pexelsClient,
+		downloader:    downloader,
+		uploadClient:  uploadClient,
+		contentClient: contentClient,
 	}
 }
 
@@ -162,10 +168,10 @@ func (c *Conusmer) handleMessage(delivery amqp.Delivery) error {
 		msg.MaxDurationSeconds,
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-	defer cancel()
-
-	videos, err := c.pexelsClient.SearchVideos(ctx, pexels.SearchParams{
+	searchCtx, searchCancel := context.WithTimeout(
+		context.Background(),
+		30*time.Second)
+	videos, err := c.pexelsClient.SearchVideos(searchCtx, pexels.SearchParams{
 		Query:              msg.Query,
 		Orientation:        msg.Orientation,
 		Limit:              msg.Limit,
@@ -173,6 +179,7 @@ func (c *Conusmer) handleMessage(delivery amqp.Delivery) error {
 		MinDurationSeconds: msg.MinDurationSeconds,
 		MaxDurationSeconds: msg.MaxDurationSeconds,
 	})
+	searchCancel()
 	if err != nil {
 		return fmt.Errorf("failed to search Pexels videos: %w", err)
 	}
@@ -189,16 +196,55 @@ func (c *Conusmer) handleMessage(delivery amqp.Delivery) error {
 			video.Author,
 			video.VideoURL,
 		)
-		downloadedVideo, err := c.downloader.Download(ctx, video.VideoURL)
+		videoCtx, videoCancel := context.WithTimeout(
+			context.Background(),
+			4*time.Minute)
+		downloadedVideo, err := c.downloader.Download(videoCtx, video.VideoURL)
 		if err != nil {
-			log.Printf("failed o download video externalID=%v", err)
+			videoCancel()
+			log.Printf("failed to download video externalID=%v", err)
+			continue
+		}
+		uploadResult, err := c.uploadClient.UploadVideo(videoCtx, upload.UploadVideoInput{
+			Source:      video.Source,
+			ExternalID:  video.ExternalID,
+			FileName:    video.ExternalID + ".mp4",
+			ContentType: downloadedVideo.ContentType,
+			ObjectKey:   fmt.Sprintf("videos/imported/%s/%s/original.mp4", video.Source, video.ExternalID),
+			Data:        downloadedVideo.Data,
+		})
+		if err != nil {
+			videoCancel()
+			log.Printf("failed to upload video externalID=%s : %v", video.ExternalID, err)
 			continue
 		}
 		log.Printf(
-			"downloaded video externalId=%s contentType=%s sizeBytes=%d",
+			"downloaded video externalId=%s bucket=%s objectKey=%s sizeBytes=%d",
 			video.ExternalID,
-			downloadedVideo.ContentType,
-			downloadedVideo.SizeBytes,
+			uploadResult.Bucket,
+			uploadResult.ObjectKey,
+			uploadResult.SizeBytes,
+		)
+		createdVideo, err := c.contentClient.CreateVideo(videoCtx, content.CreateVideoInput{
+			Title:           msg.Query,
+			Description:     fmt.Sprintf("Imported from Pexels. Author: %s. External ID: %s", video.Author, video.ExternalID),
+			StorageKey:      uploadResult.ObjectKey,
+			ThumbnailKey:    video.ThumbnailURL,
+			MimeType:        uploadResult.MimeType,
+			DurationSeconds: int32(video.DurationSec),
+			Status:          "READY",
+		})
+		videoCancel()
+		if err != nil {
+			log.Printf("failed to create content video externalID=%s: %v", video.ExternalID, err)
+			continue
+		}
+		log.Printf(
+			"created content video externalId=%s videoId=%s storageKey=%s status=%s",
+			video.ExternalID,
+			createdVideo.ID,
+			createdVideo.StorageKey,
+			createdVideo.Status,
 		)
 	}
 

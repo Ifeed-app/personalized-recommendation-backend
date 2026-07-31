@@ -1,23 +1,54 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"os"
+	contentv1 "backend-diplomski/proto/gen/content/v1"
+	"backend-diplomski/services/content-service/db"
+	"backend-diplomski/services/content-service/db/sqlc"
+	"backend-diplomski/services/content-service/internal/config"
+	contentgrpc "backend-diplomski/services/content-service/internal/grpc"
+	"backend-diplomski/services/content-service/internal/storage"
+	_ "fmt"
+	"log"
+	"net"
+	_ "net/http"
+	_ "os"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "8060"
+	cfg := config.Load()
+	dbPool, err := db.NewPool(cfg)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer dbPool.Close()
+	quries := sqlc.New(dbPool)
+	minioStorage, err := storage.NewMinioStorage(cfg)
+	if err != nil {
+		log.Fatalf("failed to create minio storage: %v", err)
+	}
+	startGRPCServer(cfg.GRPCPort, quries, minioStorage)
+}
+
+func startGRPCServer(port string, queries *sqlc.Queries, minioStorage *storage.MinioStorage) {
+	listener, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Fatalf("failed to listen on gRPC port %s: %v", port, err)
 	}
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "content-service ok")
-	})
+	grpcServer := grpc.NewServer()
 
-	fmt.Println("content-service started on port", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		panic(err)
+	contentv1.RegisterContentServiceServer(
+		grpcServer,
+		contentgrpc.NewServer(queries, minioStorage),
+	)
+	reflection.Register(grpcServer)
+
+	log.Printf("content-service gRPC listening on port %s", port)
+
+	if err := grpcServer.Serve(listener); err != nil {
+		log.Fatalf("failed to serve content-service gRPC: %v", err)
 	}
 }

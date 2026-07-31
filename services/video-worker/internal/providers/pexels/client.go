@@ -146,8 +146,8 @@ func (c *Client) SearchVideos(ctx context.Context, params SearchParams) ([]Exter
 			Author:       video.User.Name,
 			Query:        params.Query,
 			DurationSec:  video.Duration,
-			Width:        video.Width,
-			Height:       video.Height,
+			Width:        getDimension(bestFile.Width),
+			Height:       getDimension(bestFile.Height),
 			Orientation:  params.Orientation,
 		})
 	}
@@ -199,7 +199,14 @@ func isValidShortVideo(video pexelsVideo, minDuration int, maxDuration int) bool
 }
 
 func chooseBestMP4(files []pexelsVideoFile) *pexelsVideoFile {
+	const (
+		targetWidth  = 720
+		targetHeight = 1280
+		maxWidth     = 1080
+		maxHeight    = 1920
+	)
 	var best *pexelsVideoFile
+	bestScore := int(^uint(0) >> 1)
 
 	for i := range files {
 		file := &files[i]
@@ -208,17 +215,27 @@ func chooseBestMP4(files []pexelsVideoFile) *pexelsVideoFile {
 			continue
 		}
 
-		if best == nil {
-			best = file
+		width := getDimension(file.Width)
+		height := getDimension(file.Height)
+
+		if width <= 0 || height <= 0 {
 			continue
 		}
 
-		currentHeight := getDimension(file.Height)
-		bestHeight := getDimension(best.Height)
-
-		if currentHeight > bestHeight {
-			best = file
+		if width >= height {
+			continue
 		}
+
+		if width > maxWidth || height > maxHeight {
+			continue
+		}
+		score := abs(width-targetWidth) + abs(height-targetHeight)
+
+		if best == nil || score < bestScore {
+			best = file
+			bestScore = score
+		}
+
 	}
 
 	return best
@@ -230,4 +247,12 @@ func getDimension(value *int) int {
 	}
 
 	return *value
+}
+
+func abs(value int) int {
+	if value < 0 {
+		return -value
+	}
+	return value
+
 }

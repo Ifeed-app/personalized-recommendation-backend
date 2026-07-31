@@ -20,6 +20,8 @@ type Config struct {
 	VideoFetchOrientation        string
 	VideoFetchMinDurationSeconds int
 	VideoFetchMaxDurationSeconds int
+	UploadServiceGRPCURL         string
+	ContentServiceGRPCURL        string
 }
 
 func Load() (*Config, error) {
@@ -37,6 +39,8 @@ func Load() (*Config, error) {
 	viper.SetDefault("VIDEO_FETCH_ORIENTATION", "portrait")
 	viper.SetDefault("VIDEO_FETCH_MIN_DURATION_SECONDS", 3)
 	viper.SetDefault("VIDEO_FETCH_MAX_DURATION_SECONDS", 120)
+	viper.SetDefault("UPLOAD_SERVICE_GRPC_URL", "localhost:9050")
+	viper.SetDefault("CONTENT_SERVICE_GRPC_URL", "localhost:9080")
 
 	cfg := &Config{
 		RabbitMQURL:                  viper.GetString("RABBITMQ_URL"),
@@ -51,6 +55,8 @@ func Load() (*Config, error) {
 		VideoFetchOrientation:        viper.GetString("VIDEO_FETCH_ORIENTATION"),
 		VideoFetchMinDurationSeconds: viper.GetInt("VIDEO_FETCH_MIN_DURATION_SECONDS"),
 		VideoFetchMaxDurationSeconds: viper.GetInt("VIDEO_FETCH_MAX_DURATION_SECONDS"),
+		UploadServiceGRPCURL:         viper.GetString("UPLOAD_SERVICE_GRPC_URL"),
+		ContentServiceGRPCURL:        viper.GetString("CONTENT_SERVICE_GRPC_URL"),
 	}
 
 	if cfg.RabbitMQURL == "" {

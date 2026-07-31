@@ -97,3 +97,37 @@ RETURNING
 -- name: DeleteVideo :exec
 DELETE FROM content_service.videos
 WHERE id = $1;
+
+-- name: GetVideoByStorageKey :one
+SELECT
+    id,
+    creator_id,
+    title,
+    description,
+    storage_key,
+    thumbnail_key,
+    mime_type,
+    duration_seconds,
+    status,
+    created_at,
+    updated_at
+FROM content_service.videos
+WHERE storage_key = $1;
+
+-- name: ListReadyVideos :many
+SELECT
+    id,
+    creator_id,
+    title,
+    description,
+    storage_key,
+    thumbnail_key,
+    mime_type,
+    duration_seconds,
+    status,
+    created_at,
+    updated_at
+FROM content_service.videos
+WHERE status = 'READY'
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
