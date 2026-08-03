@@ -11,14 +11,18 @@ import (
 )
 
 type Querier interface {
+	CountCurrentLikesByVideoID(ctx context.Context, videoID pgtype.UUID) (int64, error)
 	CountVideoInteractionsByVideoIDAndType(ctx context.Context, arg CountVideoInteractionsByVideoIDAndTypeParams) (int64, error)
 	CreateVideoInteraction(ctx context.Context, arg CreateVideoInteractionParams) (IntegrationServiceVideoInteraction, error)
 	CreateVideoWatchSession(ctx context.Context, arg CreateVideoWatchSessionParams) (IntegrationServiceVideoWatchSession, error)
 	DeleteVideoInteraction(ctx context.Context, id pgtype.UUID) error
 	DeleteVideoWatchSession(ctx context.Context, id pgtype.UUID) error
+	GetLatestInteractionByUserAndVideo(ctx context.Context, arg GetLatestInteractionByUserAndVideoParams) (IntegrationServiceVideoInteraction, error)
+	GetLatestInteractionTypeByUserAndVideo(ctx context.Context, arg GetLatestInteractionTypeByUserAndVideoParams) (string, error)
 	GetTotalWatchedSecondsByUserID(ctx context.Context, userID pgtype.UUID) (interface{}, error)
 	GetTotalWatchedSecondsByVideoID(ctx context.Context, videoID pgtype.UUID) (interface{}, error)
 	GetVideoWatchSessionByID(ctx context.Context, id pgtype.UUID) (IntegrationServiceVideoWatchSession, error)
+	IsVideoCurrentlyLikedByUser(ctx context.Context, arg IsVideoCurrentlyLikedByUserParams) (bool, error)
 	ListCompletedWatchSessionsByUserID(ctx context.Context, userID pgtype.UUID) ([]IntegrationServiceVideoWatchSession, error)
 	ListVideoInteractionsByUserID(ctx context.Context, userID pgtype.UUID) ([]IntegrationServiceVideoInteraction, error)
 	ListVideoInteractionsByUserIDAndType(ctx context.Context, arg ListVideoInteractionsByUserIDAndTypeParams) ([]IntegrationServiceVideoInteraction, error)

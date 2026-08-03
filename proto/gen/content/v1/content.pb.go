@@ -4,7 +4,7 @@
 // 	protoc        v3.21.12
 // source: content/v1/content.proto
 
-package interactionv1
+package contentv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -435,7 +435,8 @@ const file_content_v1_content_proto_rawDesc = "" +
 	" \x01(\tR\tcreatedAt2\xbd\x01\n" +
 	"\x0eContentService\x12P\n" +
 	"\vCreateVideo\x12\x1e.content.v1.CreateVideoRequest\x1a\x1f.content.v1.CreateVideoResponse\"\x00\x12Y\n" +
-	"\x0eListFeedVideos\x12!.content.v1.ListFeedVideosRequest\x1a\".content.v1.ListFeedVideosResponse\"\x00B:Z8backend-diplomski/proto/gen/interaction/v1;interactionv1b\x06proto3"
+	"\x0eListFeedVideos\x12!.content.v1.ListFeedVideosRequest\x1a\".content.v1.ListFeedVideosResponse\"\x00Bg\n" +
+	"#com.example.feeder.proto.content.v1B\fContentProtoP\x01Z0backend-diplomski/proto/gen/content/v1;contentv1b\x06proto3"
 
 var (
 	file_content_v1_content_proto_rawDescOnce sync.Once
