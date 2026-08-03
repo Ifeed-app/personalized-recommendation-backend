@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: content/v1/content.proto
 
-package interactionv1
+package contentv1
 
 import (
 	context "context"

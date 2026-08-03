@@ -65,8 +65,8 @@ services:
   interaction-service:
     platform: linux/amd64
     build:
-      context: ./services/interaction-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/interaction-service/Dockerfile
     container_name: interaction_service
     restart: unless-stopped
     depends_on:
@@ -80,6 +80,7 @@ services:
       DB_NAME: ${DB_NAME}
     ports:
       - "${INTERACTION_SERVICE_PORT}:${INTERACTION_SERVICE_PORT}"
+      - "${INTERACTION_SERVICE_GRPC_PORT}:${INTERACTION_SERVICE_GRPC_PORT}"
 
   upload-service:
     platform: linux/amd64
