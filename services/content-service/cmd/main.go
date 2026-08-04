@@ -6,6 +6,9 @@ import (
 	"backend-diplomski/services/content-service/db/sqlc"
 	"backend-diplomski/services/content-service/internal/config"
 	contentgrpc "backend-diplomski/services/content-service/internal/grpc"
+	auth "backend-diplomski/shared/auth"
+	"context"
+
 	"backend-diplomski/services/content-service/internal/storage"
 	_ "fmt"
 	"log"
@@ -14,7 +17,14 @@ import (
 	_ "os"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
+)
+
+const (
+	createVideoMethod = "/content.v1.ContentService/CreateVideo"
+	listFeedMethod    = "/content.v1.ContentService/ListFeedVideos"
 )
 
 func main() {
@@ -29,16 +39,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create minio storage: %v", err)
 	}
-	startGRPCServer(cfg.GRPCPort, quries, minioStorage)
+	startGRPCServer(cfg.GRPCPort, cfg.VideoWorkerServiceToken, quries, minioStorage)
 }
 
-func startGRPCServer(port string, queries *sqlc.Queries, minioStorage *storage.MinioStorage) {
+func startGRPCServer(port string, videWorkerServiceToken string, queries *sqlc.Queries, minioStorage *storage.MinioStorage) {
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalf("failed to listen on gRPC port %s: %v", port, err)
 	}
 
-	grpcServer := grpc.NewServer()
+	serviceAuth := auth.NewServiceAuthInterceptor(
+		videWorkerServiceToken,
+		"video-worker")
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(contentServiceUnaryInterceptor(serviceAuth)))
 
 	contentv1.RegisterContentServiceServer(
 		grpcServer,
@@ -50,5 +64,35 @@ func startGRPCServer(port string, queries *sqlc.Queries, minioStorage *storage.M
 
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("failed to serve content-service gRPC: %v", err)
+	}
+}
+
+func contentServiceUnaryInterceptor(
+	serviceAuth *auth.ServiceAuthInterceptor,
+) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req any,
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (any, error) {
+		switch info.FullMethod {
+		case listFeedMethod:
+			return handler(ctx, req)
+
+		case createVideoMethod:
+			return serviceAuth.Unary(
+				ctx,
+				req,
+				info,
+				handler,
+			)
+
+		default:
+			return nil, status.Error(
+				codes.PermissionDenied,
+				"method access policy is not configured",
+			)
+		}
 	}
 }

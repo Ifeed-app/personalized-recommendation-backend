@@ -30,13 +30,13 @@ func main() {
 	defer stop()
 	pexelsClient := pexels.NewClient(cfg.PexelsAPIKey, cfg.PexelsAPIURL)
 	videoDownloader := downloader.NewDownloader()
-	uploadClient, err := upload.NewCLient(cfg.UploadServiceGRPCURL)
+	uploadClient, err := upload.NewClient(cfg.UploadServiceGRPCURL, cfg.ServiceToken)
 	if err != nil {
-		log.Fatalf("failed to create uploade service client : %w", err)
+		log.Fatalf("failed to create uploade service client : %v", err)
 	}
 	defer uploadClient.Close()
 
-	contentClient, err := content.NewClient(cfg.ContentServiceGRPCURL)
+	contentClient, err := content.NewClient(cfg.ContentServiceGRPCURL, cfg.ServiceToken)
 	if err != nil {
 		log.Fatalf("failed to create content-service client : %v", err)
 	}

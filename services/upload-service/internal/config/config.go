@@ -8,20 +8,19 @@ import (
 )
 
 type Config struct {
-	AppPort string
-
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-
-	S3Endpoint  string
-	S3AccessKey string
-	S3SecretKey string
-	S3Bucket    string
-	S3Region    string
-	S3UseSSL    bool
+	AppPort      string
+	DBHost       string
+	DBPort       string
+	DBUser       string
+	DBPassword   string
+	DBName       string
+	ServiceToken string
+	S3Endpoint   string
+	S3AccessKey  string
+	S3SecretKey  string
+	S3Bucket     string
+	S3Region     string
+	S3UseSSL     bool
 
 	GRPCPort string
 }
@@ -37,7 +36,6 @@ func Load() (*Config, error) {
 	viper.SetDefault("DB_USER", "postgres")
 	viper.SetDefault("DB_PASSWORD", "postgres")
 	viper.SetDefault("DB_NAME", "video_platform")
-
 	viper.SetDefault("S3_ENDPOINT", "localhost:9000")
 	viper.SetDefault("S3_ACCESS_KEY", "minioadmin")
 	viper.SetDefault("S3_SECRET_KEY", "minioadmin123")
@@ -49,19 +47,19 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		AppPort: viper.GetString("APP_PORT"),
 
-		DBHost:     viper.GetString("DB_HOST"),
-		DBPort:     viper.GetString("DB_PORT"),
-		DBUser:     viper.GetString("DB_USER"),
-		DBPassword: viper.GetString("DB_PASSWORD"),
-		DBName:     viper.GetString("DB_NAME"),
-
-		S3Endpoint:  viper.GetString("S3_ENDPOINT"),
-		S3AccessKey: viper.GetString("S3_ACCESS_KEY"),
-		S3SecretKey: viper.GetString("S3_SECRET_KEY"),
-		S3Bucket:    viper.GetString("S3_BUCKET"),
-		S3Region:    viper.GetString("S3_REGION"),
-		S3UseSSL:    viper.GetBool("S3_USE_SSL"),
-		GRPCPort:    viper.GetString("GRPC_PORT"),
+		DBHost:       viper.GetString("DB_HOST"),
+		DBPort:       viper.GetString("DB_PORT"),
+		DBUser:       viper.GetString("DB_USER"),
+		DBPassword:   viper.GetString("DB_PASSWORD"),
+		DBName:       viper.GetString("DB_NAME"),
+		S3Endpoint:   viper.GetString("S3_ENDPOINT"),
+		S3AccessKey:  viper.GetString("S3_ACCESS_KEY"),
+		S3SecretKey:  viper.GetString("S3_SECRET_KEY"),
+		S3Bucket:     viper.GetString("S3_BUCKET"),
+		S3Region:     viper.GetString("S3_REGION"),
+		S3UseSSL:     viper.GetBool("S3_USE_SSL"),
+		GRPCPort:     viper.GetString("GRPC_PORT"),
+		ServiceToken: viper.GetString("VIDEO_WORKER_SERVICE_TOKEN"),
 	}
 
 	if cfg.S3Endpoint == "" {
@@ -78,6 +76,9 @@ func Load() (*Config, error) {
 
 	if cfg.S3Bucket == "" {
 		return nil, fmt.Errorf("S3_BUCKET is required")
+	}
+	if cfg.ServiceToken == "" {
+		return nil, fmt.Errorf("VIDEO_WORKER_SERVICE_TOKEN is required")
 	}
 
 	return cfg, nil

@@ -2,6 +2,7 @@ package upload
 
 import (
 	uploadv1 "backend-diplomski/proto/gen/upload/v1"
+	auth "backend-diplomski/shared/auth"
 	"context"
 	"fmt"
 
@@ -33,20 +34,42 @@ type UploadVideoResult struct {
 	OriginalFileName string
 }
 
-func NewCLient(target string) (*Client, error) {
-	conn, err := grpc.NewClient(
-		target,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+func NewClient(
+	address string,
+	serviceToken string,
+) (*Client, error) {
+	serviceCredentials :=
+		auth.NewServiceCredentialsInterceptor(
+			"video-worker",
+			serviceToken,
+		)
+
+	connection, err := grpc.NewClient(
+		address,
+		grpc.WithTransportCredentials(
+			insecure.NewCredentials(),
+		),
+		grpc.WithUnaryInterceptor(
+			serviceCredentials.Unary,
+		),
+		grpc.WithStreamInterceptor(
+			serviceCredentials.Stream,
+		),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create upload serrvice grpc clinet: %w", err)
+		return nil, fmt.Errorf(
+			"failed to connect to upload-service: %w",
+			err,
+		)
 	}
+
 	return &Client{
-		conn:   conn,
-		client: uploadv1.NewUploadServiceClient(conn),
+		conn: connection,
+		client: uploadv1.NewUploadServiceClient(
+			connection,
+		),
 	}, nil
 }
-
 func (c *Client) Close() error {
 	return c.conn.Close()
 }

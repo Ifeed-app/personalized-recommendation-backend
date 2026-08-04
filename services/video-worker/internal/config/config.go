@@ -22,6 +22,7 @@ type Config struct {
 	VideoFetchMaxDurationSeconds int
 	UploadServiceGRPCURL         string
 	ContentServiceGRPCURL        string
+	ServiceToken                 string
 }
 
 func Load() (*Config, error) {
@@ -57,6 +58,7 @@ func Load() (*Config, error) {
 		VideoFetchMaxDurationSeconds: viper.GetInt("VIDEO_FETCH_MAX_DURATION_SECONDS"),
 		UploadServiceGRPCURL:         viper.GetString("UPLOAD_SERVICE_GRPC_URL"),
 		ContentServiceGRPCURL:        viper.GetString("CONTENT_SERVICE_GRPC_URL"),
+		ServiceToken:                 viper.GetString("VIDEO_WORKER_SERVICE_TOKEN"),
 	}
 
 	if cfg.RabbitMQURL == "" {

@@ -3,15 +3,15 @@ package grpc
 import (
 	userv1 "backend-diplomski/proto/gen/user/v1"
 	"backend-diplomski/services/user-service/db/sqlc"
+	auth "backend-diplomski/shared/auth"
 	"context"
 	"errors"
-	"strings"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	_ "strings"
 )
 
 type UserServer struct {
@@ -25,13 +25,14 @@ func NewUserServer(queries *sqlc.Queries) *UserServer {
 	}
 }
 
-func (s *UserServer) GetUserById(ctx context.Context, req *userv1.GetUserByIdRequest) (*userv1.GetUserByIdResponse, error) {
-	userID := strings.TrimSpace(req.GetId())
-
-	if userID == "" {
-		return nil, status.Error(codes.InvalidArgument, "user id is required")
+func (s *UserServer) GetCurrentUser(ctx context.Context, req *userv1.GetCurrentUserRequest) (*userv1.GetCurrentUserResponse, error) {
+	userID, ok := auth.UserIDFromContext(ctx)
+	if !ok {
+		return nil, status.Error(
+			codes.Unauthenticated,
+			"authenticated user is missing",
+		)
 	}
-
 	parsedUserID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid user id")
@@ -49,7 +50,7 @@ func (s *UserServer) GetUserById(ctx context.Context, req *userv1.GetUserByIdReq
 		return nil, status.Errorf(codes.Internal, "failed to get user: %v", err)
 	}
 
-	return &userv1.GetUserByIdResponse{
+	return &userv1.GetCurrentUserResponse{
 		User: &userv1.User{
 			Id:        uuid.UUID(dbUser.ID.Bytes).String(),
 			Email:     dbUser.Email,
