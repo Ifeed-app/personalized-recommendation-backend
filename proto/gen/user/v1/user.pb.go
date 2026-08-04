@@ -97,27 +97,26 @@ func (x *User) GetUpdatedAt() string {
 	return ""
 }
 
-type GetUserByIdRequest struct {
+type GetCurrentUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetUserByIdRequest) Reset() {
-	*x = GetUserByIdRequest{}
+func (x *GetCurrentUserRequest) Reset() {
+	*x = GetCurrentUserRequest{}
 	mi := &file_user_v1_user_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetUserByIdRequest) String() string {
+func (x *GetCurrentUserRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetUserByIdRequest) ProtoMessage() {}
+func (*GetCurrentUserRequest) ProtoMessage() {}
 
-func (x *GetUserByIdRequest) ProtoReflect() protoreflect.Message {
+func (x *GetCurrentUserRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_user_v1_user_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -129,39 +128,32 @@ func (x *GetUserByIdRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetUserByIdRequest.ProtoReflect.Descriptor instead.
-func (*GetUserByIdRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetCurrentUserRequest.ProtoReflect.Descriptor instead.
+func (*GetCurrentUserRequest) Descriptor() ([]byte, []int) {
 	return file_user_v1_user_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetUserByIdRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-type GetUserByIdResponse struct {
+type GetCurrentUserResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetUserByIdResponse) Reset() {
-	*x = GetUserByIdResponse{}
+func (x *GetCurrentUserResponse) Reset() {
+	*x = GetCurrentUserResponse{}
 	mi := &file_user_v1_user_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetUserByIdResponse) String() string {
+func (x *GetCurrentUserResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetUserByIdResponse) ProtoMessage() {}
+func (*GetCurrentUserResponse) ProtoMessage() {}
 
-func (x *GetUserByIdResponse) ProtoReflect() protoreflect.Message {
+func (x *GetCurrentUserResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_user_v1_user_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -173,12 +165,12 @@ func (x *GetUserByIdResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetUserByIdResponse.ProtoReflect.Descriptor instead.
-func (*GetUserByIdResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetCurrentUserResponse.ProtoReflect.Descriptor instead.
+func (*GetCurrentUserResponse) Descriptor() ([]byte, []int) {
 	return file_user_v1_user_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetUserByIdResponse) GetUser() *User {
+func (x *GetCurrentUserResponse) GetUser() *User {
 	if x != nil {
 		return x.User
 	}
@@ -197,13 +189,13 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x05 \x01(\tR\tupdatedAt\"$\n" +
-	"\x12GetUserByIdRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"8\n" +
-	"\x13GetUserByIdResponse\x12!\n" +
-	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user2Y\n" +
-	"\vUserService\x12J\n" +
-	"\vGetUserById\x12\x1b.user.v1.GetUserByIdRequest\x1a\x1c.user.v1.GetUserByIdResponse\"\x00B,Z*backend-diplomski/proto/gen/user/v1;userv1b\x06proto3"
+	"updated_at\x18\x05 \x01(\tR\tupdatedAt\"\x17\n" +
+	"\x15GetCurrentUserRequest\";\n" +
+	"\x16GetCurrentUserResponse\x12!\n" +
+	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user2b\n" +
+	"\vUserService\x12S\n" +
+	"\x0eGetCurrentUser\x12\x1e.user.v1.GetCurrentUserRequest\x1a\x1f.user.v1.GetCurrentUserResponse\"\x00B[\n" +
+	" com.example.feeder.proto.user.v1B\tUserProtoP\x01Z*backend-diplomski/proto/gen/user/v1;userv1b\x06proto3"
 
 var (
 	file_user_v1_user_proto_rawDescOnce sync.Once
@@ -219,14 +211,14 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 
 var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_user_v1_user_proto_goTypes = []any{
-	(*User)(nil),                // 0: user.v1.User
-	(*GetUserByIdRequest)(nil),  // 1: user.v1.GetUserByIdRequest
-	(*GetUserByIdResponse)(nil), // 2: user.v1.GetUserByIdResponse
+	(*User)(nil),                   // 0: user.v1.User
+	(*GetCurrentUserRequest)(nil),  // 1: user.v1.GetCurrentUserRequest
+	(*GetCurrentUserResponse)(nil), // 2: user.v1.GetCurrentUserResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
-	0, // 0: user.v1.GetUserByIdResponse.user:type_name -> user.v1.User
-	1, // 1: user.v1.UserService.GetUserById:input_type -> user.v1.GetUserByIdRequest
-	2, // 2: user.v1.UserService.GetUserById:output_type -> user.v1.GetUserByIdResponse
+	0, // 0: user.v1.GetCurrentUserResponse.user:type_name -> user.v1.User
+	1, // 1: user.v1.UserService.GetCurrentUser:input_type -> user.v1.GetCurrentUserRequest
+	2, // 2: user.v1.UserService.GetCurrentUser:output_type -> user.v1.GetCurrentUserResponse
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

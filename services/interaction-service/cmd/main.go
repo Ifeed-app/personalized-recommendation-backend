@@ -6,11 +6,13 @@ import (
 	"backend-diplomski/services/interaction-service/db/sqlc"
 	"backend-diplomski/services/interaction-service/internal/config"
 	interactiongrpc "backend-diplomski/services/interaction-service/internal/grpc"
+	"backend-diplomski/shared/auth"
 	_ "fmt"
 	"log"
 	"net"
 	_ "net/http"
 	_ "os"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -27,11 +29,12 @@ func main() {
 
 	queries := sqlc.New(dbPool)
 
-	startGRPCServer(cfg.GRPCPort, queries)
+	startGRPCServer(cfg.GRPCPort, cfg.JWTSecret, queries)
 }
 
 func startGRPCServer(
 	port string,
+	jwtSecret string,
 	queries *sqlc.Queries,
 ) {
 	listener, err := net.Listen("tcp", ":"+port)
@@ -43,7 +46,17 @@ func startGRPCServer(
 		)
 	}
 
-	grpcServer := grpc.NewServer()
+	jwtManager := auth.NewJWTManager(
+		jwtSecret,
+		"user-service",
+		time.Minute)
+
+	authInterceptor := auth.NewUnaryAuthInterceptor(
+		jwtManager,
+	)
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			authInterceptor.Intercept))
 
 	interactionServer := interactiongrpc.NewServer(queries)
 

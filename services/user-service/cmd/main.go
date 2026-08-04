@@ -3,10 +3,11 @@ package main
 import (
 	userv1 "backend-diplomski/proto/gen/user/v1"
 	"backend-diplomski/services/user-service/db/sqlc"
-	"backend-diplomski/services/user-service/internal/auth"
+	_ "backend-diplomski/services/user-service/internal/auth"
 	"backend-diplomski/services/user-service/internal/config"
 	"backend-diplomski/services/user-service/internal/db"
 	servicegrpc "backend-diplomski/services/user-service/internal/grpc"
+	auth "backend-diplomski/shared/auth"
 	"log"
 	"net"
 	"time"
@@ -38,7 +39,21 @@ func main() {
 		"user-service",
 		time.Duration(cfg.AccessTokenTTLMinutes)*time.Minute,
 	)
-	grpcServer := grpc.NewServer()
+
+	authInterceptor := auth.NewUnaryAuthInterceptor(
+		jwtManager,
+
+		"/user.v1.AuthService/SignUp",
+		"/user.v1.AuthService/SignIn",
+		"/user.v1.AuthService/RefreshToken",
+		"/user.v1.AuthService/ForgotPassword",
+	)
+
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			authInterceptor.Intercept,
+		),
+	)
 	userServer := servicegrpc.NewUserServer(queries)
 	authServer := servicegrpc.NewAuthServer(queries, jwtManager, cfg)
 	userv1.RegisterUserServiceServer(grpcServer, userServer)

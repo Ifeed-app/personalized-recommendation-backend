@@ -2,6 +2,7 @@ package content
 
 import (
 	contentv1 "backend-diplomski/proto/gen/content/v1"
+	"backend-diplomski/shared/auth"
 	"context"
 	"fmt"
 
@@ -31,17 +32,34 @@ type CreateVideoResult struct {
 	Status     string
 }
 
-func NewClient(target string) (*Client, error) {
-	conn, err := grpc.NewClient(
-		target,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+func NewClient(
+	address string,
+	serviceToken string,
+) (*Client, error) {
+	credentials := auth.NewServiceCredentialsInterceptor(
+		"video-worker",
+		serviceToken,
+	)
+
+	connection, err := grpc.NewClient(
+		address,
+		grpc.WithTransportCredentials(
+			insecure.NewCredentials(),
+		),
+		grpc.WithUnaryInterceptor(
+			credentials.Unary,
+		),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create content-service grpc client:%w", err)
+		return nil, fmt.Errorf(
+			"connect to content service: %w",
+			err,
+		)
 	}
+
 	return &Client{
-		conn:   conn,
-		client: contentv1.NewContentServiceClient(conn),
+		conn:   connection,
+		client: contentv1.NewContentServiceClient(connection),
 	}, nil
 }
 
