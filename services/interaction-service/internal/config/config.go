@@ -14,6 +14,7 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
+	JWTSecret  string
 }
 
 func Load() Config {
@@ -36,10 +37,15 @@ func Load() Config {
 		DBPassword: viper.GetString("DB_PASSWORD"),
 		DBName:     viper.GetString("DB_NAME"),
 		DBSSLMode:  viper.GetString("DB_SSLMODE"),
+		JWTSecret:  viper.GetString("JWT_SECRET"),
 	}
 
 	if cfg.GRPCPort == "" {
 		log.Fatal("INTERACTION_SERVICE_GRPC_PORT is required")
+	}
+
+	if cfg.JWTSecret == "" {
+		log.Fatal("JWT_SECRET is required")
 	}
 
 	return cfg

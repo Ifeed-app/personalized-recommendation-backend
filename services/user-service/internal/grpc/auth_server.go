@@ -3,8 +3,9 @@ package grpc
 import (
 	userv1 "backend-diplomski/proto/gen/user/v1"
 	"backend-diplomski/services/user-service/db/sqlc"
-	"backend-diplomski/services/user-service/internal/auth"
+	refreshToken "backend-diplomski/services/user-service/internal/auth"
 	"backend-diplomski/services/user-service/internal/config"
+	auth "backend-diplomski/shared/auth"
 	"context"
 	"strings"
 	"time"
@@ -79,7 +80,7 @@ func (s *AuthServer) SignUp(ctx context.Context, req *userv1.SignUpRequest) (*us
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to geberate access token: %v", err)
 	}
-	refreshToken, err := auth.GenerateRefreshToken()
+	refreshToken, err := refreshToken.GenerateRefreshToken()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate refresh token: %v", err)
 	}
@@ -131,7 +132,7 @@ func (s *AuthServer) SignIn(ctx context.Context, req *userv1.SignInRequest) (*us
 		return nil, status.Errorf(codes.Internal, "Failed to generate access token %v", err)
 	}
 
-	refreshToken, err := auth.GenerateRefreshToken()
+	refreshToken, err := refreshToken.GenerateRefreshToken()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate refresh token %v ", err)
 	}

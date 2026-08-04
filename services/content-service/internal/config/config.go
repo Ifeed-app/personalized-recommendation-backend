@@ -7,21 +7,22 @@ import (
 )
 
 type Config struct {
-	AppPort          string
-	DBHost           string
-	DBPort           string
-	DBUser           string
-	DBPassword       string
-	DBName           string
-	GRPCPort         string
-	ServicePort      string
-	S3Endpoint       string
-	S3AccessKey      string
-	S3Bucket         string
-	S3SecretKey      string
-	S3Region         string
-	S3UseSSL         bool
-	S3PublicEndpoint string
+	AppPort                 string
+	DBHost                  string
+	DBPort                  string
+	DBUser                  string
+	DBPassword              string
+	DBName                  string
+	GRPCPort                string
+	ServicePort             string
+	S3Endpoint              string
+	S3AccessKey             string
+	S3Bucket                string
+	S3SecretKey             string
+	S3Region                string
+	S3UseSSL                bool
+	S3PublicEndpoint        string
+	VideoWorkerServiceToken string
 }
 
 func Load() *Config {
@@ -58,6 +59,9 @@ func Load() *Config {
 		S3Region:         viper.GetString("S3_REGION"),
 		S3UseSSL:         viper.GetBool("S3_USE_SSL"),
 		S3PublicEndpoint: viper.GetString("S3_PUBLIC_ENDPOINT"),
+		VideoWorkerServiceToken: viper.GetString(
+			"VIDEO_WORKER_SERVICE_TOKEN",
+		),
 	}
 
 	log.Printf(

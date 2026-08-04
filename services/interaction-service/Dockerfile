@@ -3,6 +3,7 @@ FROM golang:1.25-alpine AS builder
 WORKDIR /app
 
 COPY proto ./proto
+COPY shared ./shared
 COPY services/interaction-service ./services/interaction-service
 
 WORKDIR /app/services/interaction-service
