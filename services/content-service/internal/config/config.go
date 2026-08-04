@@ -14,6 +14,7 @@ type Config struct {
 	DBPassword       string
 	DBName           string
 	GRPCPort         string
+	ServicePort      string
 	S3Endpoint       string
 	S3AccessKey      string
 	S3Bucket         string
@@ -39,6 +40,8 @@ func Load() *Config {
 	viper.SetDefault("S3_REGION", "us-east-1")
 	viper.SetDefault("S3_USE_SSL", false)
 	viper.SetDefault("S3_PUBLIC_ENDPOINT", "localhost:9000")
+	viper.SetDefault("INTERACTION_SERVICE_PORT", "8070")
+	viper.SetDefault("INTERACTION_SERVICE_GRPC_PORT", "9070")
 
 	cfg := &Config{
 		AppPort:          viper.GetString("APP_PORT"),
