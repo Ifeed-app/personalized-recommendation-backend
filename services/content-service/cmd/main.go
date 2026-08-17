@@ -25,6 +25,7 @@ import (
 const (
 	createVideoMethod = "/content.v1.ContentService/CreateVideo"
 	listFeedMethod    = "/content.v1.ContentService/ListFeedVideos"
+	metaData          = "/content.v1.ContentService/GetVideoMetadata"
 )
 
 func main() {
@@ -88,6 +89,13 @@ func contentServiceUnaryInterceptor(
 				handler,
 			)
 
+		case metaData:
+			return serviceAuth.Unary(
+				ctx,
+				req,
+				info,
+				handler,
+			)
 		default:
 			return nil, status.Error(
 				codes.PermissionDenied,

@@ -21,6 +21,7 @@ type Querier interface {
 	GetLatestInteractionTypeByUserAndVideo(ctx context.Context, arg GetLatestInteractionTypeByUserAndVideoParams) (string, error)
 	GetTotalWatchedSecondsByUserID(ctx context.Context, userID pgtype.UUID) (interface{}, error)
 	GetTotalWatchedSecondsByVideoID(ctx context.Context, videoID pgtype.UUID) (interface{}, error)
+	GetUserInteractionHistory(ctx context.Context, userID pgtype.UUID) ([]GetUserInteractionHistoryRow, error)
 	GetVideoWatchSessionByID(ctx context.Context, id pgtype.UUID) (IntegrationServiceVideoWatchSession, error)
 	IsVideoCurrentlyLikedByUser(ctx context.Context, arg IsVideoCurrentlyLikedByUserParams) (bool, error)
 	ListCompletedWatchSessionsByUserID(ctx context.Context, userID pgtype.UUID) ([]IntegrationServiceVideoWatchSession, error)

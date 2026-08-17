@@ -8,6 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type UserServiceEmailVerificationToken struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type UserServiceRefreshToken struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`
@@ -18,10 +27,25 @@ type UserServiceRefreshToken struct {
 }
 
 type UserServiceUser struct {
-	ID           pgtype.UUID        `json:"id"`
-	Email        string             `json:"email"`
-	Username     string             `json:"username"`
-	PasswordHash string             `json:"password_hash"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+}
+
+type UserServiceUserInterest struct {
+	UserID    pgtype.UUID        `json:"user_id"`
+	Interest  string             `json:"interest"`
+	Weight    float32            `json:"weight"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

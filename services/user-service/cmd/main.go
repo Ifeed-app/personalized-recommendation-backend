@@ -7,6 +7,7 @@ import (
 	"backend-diplomski/services/user-service/internal/config"
 	"backend-diplomski/services/user-service/internal/db"
 	servicegrpc "backend-diplomski/services/user-service/internal/grpc"
+	"backend-diplomski/services/user-service/internal/messaging"
 	auth "backend-diplomski/shared/auth"
 	"log"
 	"net"
@@ -54,8 +55,21 @@ func main() {
 			authInterceptor.Intercept,
 		),
 	)
+	emailPublisher, err := messaging.NewEmailPublisher(
+		cfg.RabbitMQURL,
+		cfg.EmailVerificationQueue)
+	if err != nil {
+		log.Fatalf(
+			"failed to initialize email publisher: %t",
+			err)
+
+	}
+	defer emailPublisher.Close()
+	log.Printf(
+		"email publisher configured: %t",
+		emailPublisher != nil)
 	userServer := servicegrpc.NewUserServer(queries)
-	authServer := servicegrpc.NewAuthServer(queries, jwtManager, cfg)
+	authServer := servicegrpc.NewAuthServer(pool, queries, jwtManager, cfg, emailPublisher)
 	userv1.RegisterUserServiceServer(grpcServer, userServer)
 	userv1.RegisterAuthServiceServer(grpcServer, authServer)
 	log.Printf("user-service connected to database and sqlc initialized")

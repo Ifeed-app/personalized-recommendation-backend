@@ -21,6 +21,7 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
+      - rabbitmq
     environment:
       APP_PORT: ${USER_SERVICE_PORT}
       DB_HOST: ${DB_HOST}
@@ -31,6 +32,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ACCESS_TOKEN_TTL_MINUTES: ${ACCESS_TOKEN_TTL_MINUTES}
       REFRESH_TOKEN_TTL_HOURS: ${REFRESH_TOKEN_TTL_HOURS}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      EMAIL_VERIFICATION_BASE_URL: ${EMAIL_VERIFICATION_BASE_URL}
     ports:
       - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
 
@@ -80,6 +83,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       JWT_SECRET: ${JWT_SECRET}
+      RECOMMENDATION_SERVICE_TOKEN: ${RECOMMENDATION_SERVICE_TOKEN}
 
     ports:
       - "${INTERACTION_SERVICE_PORT}:${INTERACTION_SERVICE_PORT}"
@@ -174,6 +178,34 @@ services:
       UPLOAD_SERVICE_GRPC_URL: ${UPLOAD_SERVICE_GRPC_URL}
       CONTENT_SERVICE_GRPC_URL: ${CONTENT_SERVICE_GRPC_URL}
       VIDEO_WORKER_SERVICE_TOKEN: ${VIDEO_WORKER_SERVICE_TOKEN}
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+        - "1025:1025"
+        - "8025:8025"
+
+  email-worker:
+    build:
+      context: .
+      dockerfile: services/email-worker/Dockerfile
+    container_name: email_worker
+    restart: unless-stopped
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      EMAIL_VERIFICATION_QUEUE: email-verification
+
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM_NAME: Feeder
+      SMTP_FROM_EMAIL: no-reply@feeder.local
+    depends_on:
+      - rabbitmq
+      - mailpit
 
 volumes:
   postgres_data:

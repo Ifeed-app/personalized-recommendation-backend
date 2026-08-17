@@ -489,6 +489,186 @@ func (x *GetVideoInteractionSummaryResponse) GetLikedByUser() bool {
 	return false
 }
 
+type GetUserInteractionHistoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserInteractionHistoryRequest) Reset() {
+	*x = GetUserInteractionHistoryRequest{}
+	mi := &file_interaction_v1_interaction_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserInteractionHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserInteractionHistoryRequest) ProtoMessage() {}
+
+func (x *GetUserInteractionHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_interaction_v1_interaction_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserInteractionHistoryRequest.ProtoReflect.Descriptor instead.
+func (*GetUserInteractionHistoryRequest) Descriptor() ([]byte, []int) {
+	return file_interaction_v1_interaction_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetUserInteractionHistoryRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type UserVideoInteraction struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	VideoId             string                 `protobuf:"bytes,1,opt,name=video_id,json=videoId,proto3" json:"video_id,omitempty"`
+	Liked               bool                   `protobuf:"varint,2,opt,name=liked,proto3" json:"liked,omitempty"`
+	Unliked             bool                   `protobuf:"varint,3,opt,name=unliked,proto3" json:"unliked,omitempty"`
+	Skipped             bool                   `protobuf:"varint,4,opt,name=skipped,proto3" json:"skipped,omitempty"`
+	TotalWatchedSeconds int32                  `protobuf:"varint,5,opt,name=total_watched_seconds,json=totalWatchedSeconds,proto3" json:"total_watched_seconds,omitempty"`
+	WatchSessionCount   int32                  `protobuf:"varint,6,opt,name=watch_session_count,json=watchSessionCount,proto3" json:"watch_session_count,omitempty"`
+	CompletedCount      int32                  `protobuf:"varint,7,opt,name=completed_count,json=completedCount,proto3" json:"completed_count,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *UserVideoInteraction) Reset() {
+	*x = UserVideoInteraction{}
+	mi := &file_interaction_v1_interaction_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserVideoInteraction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserVideoInteraction) ProtoMessage() {}
+
+func (x *UserVideoInteraction) ProtoReflect() protoreflect.Message {
+	mi := &file_interaction_v1_interaction_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserVideoInteraction.ProtoReflect.Descriptor instead.
+func (*UserVideoInteraction) Descriptor() ([]byte, []int) {
+	return file_interaction_v1_interaction_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UserVideoInteraction) GetVideoId() string {
+	if x != nil {
+		return x.VideoId
+	}
+	return ""
+}
+
+func (x *UserVideoInteraction) GetLiked() bool {
+	if x != nil {
+		return x.Liked
+	}
+	return false
+}
+
+func (x *UserVideoInteraction) GetUnliked() bool {
+	if x != nil {
+		return x.Unliked
+	}
+	return false
+}
+
+func (x *UserVideoInteraction) GetSkipped() bool {
+	if x != nil {
+		return x.Skipped
+	}
+	return false
+}
+
+func (x *UserVideoInteraction) GetTotalWatchedSeconds() int32 {
+	if x != nil {
+		return x.TotalWatchedSeconds
+	}
+	return 0
+}
+
+func (x *UserVideoInteraction) GetWatchSessionCount() int32 {
+	if x != nil {
+		return x.WatchSessionCount
+	}
+	return 0
+}
+
+func (x *UserVideoInteraction) GetCompletedCount() int32 {
+	if x != nil {
+		return x.CompletedCount
+	}
+	return 0
+}
+
+type GetUserInteractionHistoryResponse struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Interactions  []*UserVideoInteraction `protobuf:"bytes,1,rep,name=interactions,proto3" json:"interactions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserInteractionHistoryResponse) Reset() {
+	*x = GetUserInteractionHistoryResponse{}
+	mi := &file_interaction_v1_interaction_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserInteractionHistoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserInteractionHistoryResponse) ProtoMessage() {}
+
+func (x *GetUserInteractionHistoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_interaction_v1_interaction_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserInteractionHistoryResponse.ProtoReflect.Descriptor instead.
+func (*GetUserInteractionHistoryResponse) Descriptor() ([]byte, []int) {
+	return file_interaction_v1_interaction_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetUserInteractionHistoryResponse) GetInteractions() []*UserVideoInteraction {
+	if x != nil {
+		return x.Interactions
+	}
+	return nil
+}
+
 var File_interaction_v1_interaction_proto protoreflect.FileDescriptor
 
 const file_interaction_v1_interaction_proto_rawDesc = "" +
@@ -528,16 +708,29 @@ const file_interaction_v1_interaction_proto_rawDesc = "" +
 	"\"GetVideoInteractionSummaryResponse\x12\x1d\n" +
 	"\n" +
 	"like_count\x18\x01 \x01(\x03R\tlikeCount\x12\"\n" +
-	"\rliked_by_user\x18\x02 \x01(\bR\vlikedByUser*\x86\x01\n" +
+	"\rliked_by_user\x18\x02 \x01(\bR\vlikedByUser\";\n" +
+	" GetUserInteractionHistoryRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x88\x02\n" +
+	"\x14UserVideoInteraction\x12\x19\n" +
+	"\bvideo_id\x18\x01 \x01(\tR\avideoId\x12\x14\n" +
+	"\x05liked\x18\x02 \x01(\bR\x05liked\x12\x18\n" +
+	"\aunliked\x18\x03 \x01(\bR\aunliked\x12\x18\n" +
+	"\askipped\x18\x04 \x01(\bR\askipped\x122\n" +
+	"\x15total_watched_seconds\x18\x05 \x01(\x05R\x13totalWatchedSeconds\x12.\n" +
+	"\x13watch_session_count\x18\x06 \x01(\x05R\x11watchSessionCount\x12'\n" +
+	"\x0fcompleted_count\x18\a \x01(\x05R\x0ecompletedCount\"m\n" +
+	"!GetUserInteractionHistoryResponse\x12H\n" +
+	"\finteractions\x18\x01 \x03(\v2$.interaction.v1.UserVideoInteractionR\finteractions*\x86\x01\n" +
 	"\x0fInteractionType\x12 \n" +
 	"\x1cINTERACTION_TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15INTERACTION_TYPE_LIKE\x10\x01\x12\x1b\n" +
 	"\x17INTERACTION_TYPE_UNLIKE\x10\x02\x12\x19\n" +
-	"\x15INTERACTION_TYPE_SKIP\x10\x032\xf1\x02\n" +
+	"\x15INTERACTION_TYPE_SKIP\x10\x032\xf4\x03\n" +
 	"\x12InteractionService\x12h\n" +
 	"\x11CreateInteraction\x12(.interaction.v1.CreateInteractionRequest\x1a).interaction.v1.CreateInteractionResponse\x12k\n" +
 	"\x12RecordWatchSession\x12).interaction.v1.RecordWatchSessionRequest\x1a*.interaction.v1.RecordWatchSessionResponse\x12\x83\x01\n" +
-	"\x1aGetVideoInteractionSummary\x121.interaction.v1.GetVideoInteractionSummaryRequest\x1a2.interaction.v1.GetVideoInteractionSummaryResponseBw\n" +
+	"\x1aGetVideoInteractionSummary\x121.interaction.v1.GetVideoInteractionSummaryRequest\x1a2.interaction.v1.GetVideoInteractionSummaryResponse\x12\x80\x01\n" +
+	"\x19GetUserInteractionHistory\x120.interaction.v1.GetUserInteractionHistoryRequest\x1a1.interaction.v1.GetUserInteractionHistoryResponseBw\n" +
 	"'com.example.feeder.proto.interaction.v1B\x10InteractionProtoP\x01Z8backend-diplomski/proto/gen/interaction/v1;interactionv1b\x06proto3"
 
 var (
@@ -553,7 +746,7 @@ func file_interaction_v1_interaction_proto_rawDescGZIP() []byte {
 }
 
 var file_interaction_v1_interaction_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_interaction_v1_interaction_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_interaction_v1_interaction_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_interaction_v1_interaction_proto_goTypes = []any{
 	(InteractionType)(0),                       // 0: interaction.v1.InteractionType
 	(*CreateInteractionRequest)(nil),           // 1: interaction.v1.CreateInteractionRequest
@@ -562,21 +755,27 @@ var file_interaction_v1_interaction_proto_goTypes = []any{
 	(*RecordWatchSessionResponse)(nil),         // 4: interaction.v1.RecordWatchSessionResponse
 	(*GetVideoInteractionSummaryRequest)(nil),  // 5: interaction.v1.GetVideoInteractionSummaryRequest
 	(*GetVideoInteractionSummaryResponse)(nil), // 6: interaction.v1.GetVideoInteractionSummaryResponse
+	(*GetUserInteractionHistoryRequest)(nil),   // 7: interaction.v1.GetUserInteractionHistoryRequest
+	(*UserVideoInteraction)(nil),               // 8: interaction.v1.UserVideoInteraction
+	(*GetUserInteractionHistoryResponse)(nil),  // 9: interaction.v1.GetUserInteractionHistoryResponse
 }
 var file_interaction_v1_interaction_proto_depIdxs = []int32{
 	0, // 0: interaction.v1.CreateInteractionRequest.interaction_type:type_name -> interaction.v1.InteractionType
 	0, // 1: interaction.v1.CreateInteractionResponse.interaction_type:type_name -> interaction.v1.InteractionType
-	1, // 2: interaction.v1.InteractionService.CreateInteraction:input_type -> interaction.v1.CreateInteractionRequest
-	3, // 3: interaction.v1.InteractionService.RecordWatchSession:input_type -> interaction.v1.RecordWatchSessionRequest
-	5, // 4: interaction.v1.InteractionService.GetVideoInteractionSummary:input_type -> interaction.v1.GetVideoInteractionSummaryRequest
-	2, // 5: interaction.v1.InteractionService.CreateInteraction:output_type -> interaction.v1.CreateInteractionResponse
-	4, // 6: interaction.v1.InteractionService.RecordWatchSession:output_type -> interaction.v1.RecordWatchSessionResponse
-	6, // 7: interaction.v1.InteractionService.GetVideoInteractionSummary:output_type -> interaction.v1.GetVideoInteractionSummaryResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	8, // 2: interaction.v1.GetUserInteractionHistoryResponse.interactions:type_name -> interaction.v1.UserVideoInteraction
+	1, // 3: interaction.v1.InteractionService.CreateInteraction:input_type -> interaction.v1.CreateInteractionRequest
+	3, // 4: interaction.v1.InteractionService.RecordWatchSession:input_type -> interaction.v1.RecordWatchSessionRequest
+	5, // 5: interaction.v1.InteractionService.GetVideoInteractionSummary:input_type -> interaction.v1.GetVideoInteractionSummaryRequest
+	7, // 6: interaction.v1.InteractionService.GetUserInteractionHistory:input_type -> interaction.v1.GetUserInteractionHistoryRequest
+	2, // 7: interaction.v1.InteractionService.CreateInteraction:output_type -> interaction.v1.CreateInteractionResponse
+	4, // 8: interaction.v1.InteractionService.RecordWatchSession:output_type -> interaction.v1.RecordWatchSessionResponse
+	6, // 9: interaction.v1.InteractionService.GetVideoInteractionSummary:output_type -> interaction.v1.GetVideoInteractionSummaryResponse
+	9, // 10: interaction.v1.InteractionService.GetUserInteractionHistory:output_type -> interaction.v1.GetUserInteractionHistoryResponse
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_interaction_v1_interaction_proto_init() }
@@ -590,7 +789,7 @@ func file_interaction_v1_interaction_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_interaction_v1_interaction_proto_rawDesc), len(file_interaction_v1_interaction_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

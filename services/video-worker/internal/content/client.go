@@ -23,6 +23,8 @@ type CreateVideoInput struct {
 	MimeType        string
 	DurationSeconds int32
 	Status          string
+	Categories      []string
+	Tags            []string
 }
 
 type CreateVideoResult struct {
@@ -92,6 +94,8 @@ func (c *Client) CreateVideo(ctx context.Context, input CreateVideoInput) (*Crea
 		MimeType:       input.MimeType,
 		DurationSecond: input.DurationSeconds,
 		Status:         input.Status,
+		Categories:     input.Categories,
+		Tags:           input.Tags,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("content-service returned error:%w", err)

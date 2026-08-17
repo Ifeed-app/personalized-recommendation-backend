@@ -7,14 +7,15 @@ import (
 )
 
 type Config struct {
-	GRPCPort   string
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBSSLMode  string
-	JWTSecret  string
+	GRPCPort                  string
+	DBHost                    string
+	DBPort                    string
+	DBUser                    string
+	DBPassword                string
+	DBName                    string
+	DBSSLMode                 string
+	JWTSecret                 string
+	RecommendationSecretToken string
 }
 
 func Load() Config {
@@ -30,14 +31,15 @@ func Load() Config {
 	viper.SetDefault("DB_SSLMODE", "disable")
 
 	cfg := Config{
-		GRPCPort:   viper.GetString("INTERACTION_SERVICE_GRPC_PORT"),
-		DBHost:     viper.GetString("DB_HOST"),
-		DBPort:     viper.GetString("DB_PORT"),
-		DBUser:     viper.GetString("DB_USER"),
-		DBPassword: viper.GetString("DB_PASSWORD"),
-		DBName:     viper.GetString("DB_NAME"),
-		DBSSLMode:  viper.GetString("DB_SSLMODE"),
-		JWTSecret:  viper.GetString("JWT_SECRET"),
+		GRPCPort:                  viper.GetString("INTERACTION_SERVICE_GRPC_PORT"),
+		DBHost:                    viper.GetString("DB_HOST"),
+		DBPort:                    viper.GetString("DB_PORT"),
+		DBUser:                    viper.GetString("DB_USER"),
+		DBPassword:                viper.GetString("DB_PASSWORD"),
+		DBName:                    viper.GetString("DB_NAME"),
+		DBSSLMode:                 viper.GetString("DB_SSLMODE"),
+		JWTSecret:                 viper.GetString("JWT_SECRET"),
+		RecommendationSecretToken: viper.GetString("RECOMMENDATION_SERVICE_TOKEN"),
 	}
 
 	if cfg.GRPCPort == "" {

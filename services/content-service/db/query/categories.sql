@@ -41,3 +41,14 @@ FROM content_service.categories c
               ON vc.category_id = c.id
 WHERE vc.video_id = $1
 ORDER BY c.name ASC;
+
+-- name: GetOrCreateCategory :one
+INSERT INTO content_service.categories (
+    id,
+    name
+) VALUES (
+             $1, $2
+         )
+ON CONFLICT (name)
+    DO UPDATE SET name = EXCLUDED.name
+RETURNING id, name, created_at;
