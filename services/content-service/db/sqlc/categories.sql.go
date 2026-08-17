@@ -79,6 +79,30 @@ func (q *Queries) GetCategoryByName(ctx context.Context, name string) (ContentSe
 	return i, err
 }
 
+const getOrCreateCategory = `-- name: GetOrCreateCategory :one
+INSERT INTO content_service.categories (
+    id,
+    name
+) VALUES (
+             $1, $2
+         )
+ON CONFLICT (name)
+    DO UPDATE SET name = EXCLUDED.name
+RETURNING id, name, created_at
+`
+
+type GetOrCreateCategoryParams struct {
+	ID   pgtype.UUID `json:"id"`
+	Name string      `json:"name"`
+}
+
+func (q *Queries) GetOrCreateCategory(ctx context.Context, arg GetOrCreateCategoryParams) (ContentServiceCategory, error) {
+	row := q.db.QueryRow(ctx, getOrCreateCategory, arg.ID, arg.Name)
+	var i ContentServiceCategory
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
 const listCategories = `-- name: ListCategories :many
 SELECT id, name, created_at
 FROM content_service.categories

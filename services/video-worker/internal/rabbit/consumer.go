@@ -225,15 +225,33 @@ func (c *Conusmer) handleMessage(delivery amqp.Delivery) error {
 			uploadResult.ObjectKey,
 			uploadResult.SizeBytes,
 		)
-		createdVideo, err := c.contentClient.CreateVideo(videoCtx, content.CreateVideoInput{
-			Title:           msg.Query,
-			Description:     fmt.Sprintf("Imported from Pexels. Author: %s. External ID: %s", video.Author, video.ExternalID),
-			StorageKey:      uploadResult.ObjectKey,
-			ThumbnailKey:    video.ThumbnailURL,
-			MimeType:        uploadResult.MimeType,
-			DurationSeconds: int32(video.DurationSec),
-			Status:          "READY",
-		})
+		log.Printf(
+			"CREATE VIDEO REQUEST externalID=%s categories=%v tags=%v",
+			video.ExternalID,
+			[]string{msg.Query},
+			[]string{},
+		)
+		createdVideo, err := c.contentClient.CreateVideo(
+			videoCtx,
+			content.CreateVideoInput{
+				Title: msg.Query,
+				Description: fmt.Sprintf(
+					"Imported from Pexels. Author: %s. External ID: %s",
+					video.Author,
+					video.ExternalID,
+				),
+				StorageKey:      uploadResult.ObjectKey,
+				ThumbnailKey:    video.ThumbnailURL,
+				MimeType:        uploadResult.MimeType,
+				DurationSeconds: int32(video.DurationSec),
+				Status:          "READY",
+
+				Categories: []string{
+					msg.Query,
+				},
+				Tags: []string{},
+			},
+		)
 		videoCancel()
 		if err != nil {
 			log.Printf("failed to create content video externalID=%s: %v", video.ExternalID, err)

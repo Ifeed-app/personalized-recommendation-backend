@@ -11,38 +11,157 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createUser = `-- name: CreateUser :one
-INSERT INTO user_service.users (
+const completeUserOnboarding = `-- name: CompleteUserOnboarding :one
+UPDATE user_service.users
+SET
+    onboarding_completed = TRUE,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING
     id,
     email,
     username,
-    password_hash
-) VALUES (
-             $1, $2, $3, $4
-         )
-RETURNING id, email, username, password_hash, created_at, updated_at
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified,
+    email_verified_at,
+    created_at,
+    updated_at
 `
 
-type CreateUserParams struct {
-	ID           pgtype.UUID `json:"id"`
-	Email        string      `json:"email"`
-	Username     string      `json:"username"`
-	PasswordHash string      `json:"password_hash"`
+type CompleteUserOnboardingRow struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (UserServiceUser, error) {
-	row := q.db.QueryRow(ctx, createUser,
-		arg.ID,
-		arg.Email,
-		arg.Username,
-		arg.PasswordHash,
-	)
-	var i UserServiceUser
+func (q *Queries) CompleteUserOnboarding(ctx context.Context, id pgtype.UUID) (CompleteUserOnboardingRow, error) {
+	row := q.db.QueryRow(ctx, completeUserOnboarding, id)
+	var i CompleteUserOnboardingRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.Username,
 		&i.PasswordHash,
+		&i.BirthYear,
+		&i.Gender,
+		&i.CountryCode,
+		&i.PreferredLanguage,
+		&i.OnboardingCompleted,
+		&i.EmailVerified,
+		&i.EmailVerifiedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createUser = `-- name: CreateUser :one
+INSERT INTO user_service.users (
+    id,
+    email,
+    username,
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified
+)
+VALUES (
+           $1,
+           $2,
+           $3,
+           $4,
+           $5,
+           $6,
+           $7,
+           $8,
+           FALSE,
+           FALSE
+       )
+RETURNING
+    id,
+    email,
+    username,
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified,
+    email_verified_at,
+    created_at,
+    updated_at
+`
+
+type CreateUserParams struct {
+	ID                pgtype.UUID `json:"id"`
+	Email             string      `json:"email"`
+	Username          string      `json:"username"`
+	PasswordHash      string      `json:"password_hash"`
+	BirthYear         pgtype.Int2 `json:"birth_year"`
+	Gender            pgtype.Text `json:"gender"`
+	CountryCode       pgtype.Text `json:"country_code"`
+	PreferredLanguage pgtype.Text `json:"preferred_language"`
+}
+
+type CreateUserRow struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
+	row := q.db.QueryRow(ctx, createUser,
+		arg.ID,
+		arg.Email,
+		arg.Username,
+		arg.PasswordHash,
+		arg.BirthYear,
+		arg.Gender,
+		arg.CountryCode,
+		arg.PreferredLanguage,
+	)
+	var i CreateUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.PasswordHash,
+		&i.BirthYear,
+		&i.Gender,
+		&i.CountryCode,
+		&i.PreferredLanguage,
+		&i.OnboardingCompleted,
+		&i.EmailVerified,
+		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -50,19 +169,55 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (UserSer
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, username, password_hash, created_at, updated_at
+SELECT
+    id,
+    email,
+    username,
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified,
+    email_verified_at,
+    created_at,
+    updated_at
 FROM user_service.users
-WHERE email = $1
+WHERE LOWER(email) = LOWER(TRIM($1))
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (UserServiceUser, error) {
-	row := q.db.QueryRow(ctx, getUserByEmail, email)
-	var i UserServiceUser
+type GetUserByEmailRow struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, btrim string) (GetUserByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, btrim)
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.Username,
 		&i.PasswordHash,
+		&i.BirthYear,
+		&i.Gender,
+		&i.CountryCode,
+		&i.PreferredLanguage,
+		&i.OnboardingCompleted,
+		&i.EmailVerified,
+		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -70,49 +225,335 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (UserService
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, username, password_hash, created_at, updated_at
+SELECT
+    id,
+    email,
+    username,
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified,
+    email_verified_at,
+    created_at,
+    updated_at
 FROM user_service.users
 WHERE id = $1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (UserServiceUser, error) {
+type GetUserByIDRow struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDRow, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
-	var i UserServiceUser
+	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.Username,
 		&i.PasswordHash,
+		&i.BirthYear,
+		&i.Gender,
+		&i.CountryCode,
+		&i.PreferredLanguage,
+		&i.OnboardingCompleted,
+		&i.EmailVerified,
+		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const updateUser = `-- name: UpdateUser :one
-UPDATE user_service.users
-SET
-    email = $2,
-    username = $3,
-    updated_at = NOW()
-WHERE id = $1
-RETURNING id, email, username, password_hash, created_at, updated_at
+const getUserByLoginIdentifier = `-- name: GetUserByLoginIdentifier :one
+SELECT
+    id,
+    email,
+    username,
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified,
+    email_verified_at,
+    created_at,
+    updated_at
+FROM user_service.users
+WHERE LOWER(email) = LOWER($1)
+   OR LOWER(username) = LOWER($1)
+LIMIT 1
 `
 
-type UpdateUserParams struct {
-	ID       pgtype.UUID `json:"id"`
-	Email    string      `json:"email"`
-	Username string      `json:"username"`
+type GetUserByLoginIdentifierRow struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UserServiceUser, error) {
-	row := q.db.QueryRow(ctx, updateUser, arg.ID, arg.Email, arg.Username)
-	var i UserServiceUser
+func (q *Queries) GetUserByLoginIdentifier(ctx context.Context, lower string) (GetUserByLoginIdentifierRow, error) {
+	row := q.db.QueryRow(ctx, getUserByLoginIdentifier, lower)
+	var i GetUserByLoginIdentifierRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.Username,
 		&i.PasswordHash,
+		&i.BirthYear,
+		&i.Gender,
+		&i.CountryCode,
+		&i.PreferredLanguage,
+		&i.OnboardingCompleted,
+		&i.EmailVerified,
+		&i.EmailVerifiedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT
+    id,
+    email,
+    username,
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified,
+    email_verified_at,
+    created_at,
+    updated_at
+FROM user_service.users
+WHERE LOWER(username) = LOWER(TRIM($1))
+`
+
+type GetUserByUsernameRow struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetUserByUsername(ctx context.Context, btrim string) (GetUserByUsernameRow, error) {
+	row := q.db.QueryRow(ctx, getUserByUsername, btrim)
+	var i GetUserByUsernameRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.PasswordHash,
+		&i.BirthYear,
+		&i.Gender,
+		&i.CountryCode,
+		&i.PreferredLanguage,
+		&i.OnboardingCompleted,
+		&i.EmailVerified,
+		&i.EmailVerifiedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const isEmailVerified = `-- name: IsEmailVerified :one
+SELECT email_verified
+FROM user_service.users
+WHERE id = $1
+`
+
+func (q *Queries) IsEmailVerified(ctx context.Context, id pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, isEmailVerified, id)
+	var email_verified bool
+	err := row.Scan(&email_verified)
+	return email_verified, err
+}
+
+const markEmailVerified = `-- name: MarkEmailVerified :one
+UPDATE user_service.users
+SET
+    email_verified = TRUE,
+    email_verified_at = COALESCE(email_verified_at, NOW()),
+    updated_at = NOW()
+WHERE id = $1
+RETURNING
+    id,
+    email,
+    username,
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified,
+    email_verified_at,
+    created_at,
+    updated_at
+`
+
+type MarkEmailVerifiedRow struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) MarkEmailVerified(ctx context.Context, id pgtype.UUID) (MarkEmailVerifiedRow, error) {
+	row := q.db.QueryRow(ctx, markEmailVerified, id)
+	var i MarkEmailVerifiedRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.PasswordHash,
+		&i.BirthYear,
+		&i.Gender,
+		&i.CountryCode,
+		&i.PreferredLanguage,
+		&i.OnboardingCompleted,
+		&i.EmailVerified,
+		&i.EmailVerifiedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const markUserEmailVerified = `-- name: MarkUserEmailVerified :exec
+UPDATE user_service.users
+SET
+    email_verified = TRUE,
+    email_verified_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1
+`
+
+func (q *Queries) MarkUserEmailVerified(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, markUserEmailVerified, id)
+	return err
+}
+
+const updateUserProfile = `-- name: UpdateUserProfile :one
+UPDATE user_service.users
+SET
+    username = TRIM($2),
+    birth_year = $3,
+    gender = $4,
+    country_code = UPPER(TRIM($5)),
+    preferred_language = LOWER(TRIM($6)),
+    updated_at = NOW()
+WHERE id = $1
+RETURNING
+    id,
+    email,
+    username,
+    password_hash,
+    birth_year,
+    gender,
+    country_code,
+    preferred_language,
+    onboarding_completed,
+    email_verified,
+    email_verified_at,
+    created_at,
+    updated_at
+`
+
+type UpdateUserProfileParams struct {
+	ID        pgtype.UUID `json:"id"`
+	Btrim     string      `json:"btrim"`
+	BirthYear pgtype.Int2 `json:"birth_year"`
+	Gender    pgtype.Text `json:"gender"`
+	Btrim_2   string      `json:"btrim_2"`
+	Btrim_3   string      `json:"btrim_3"`
+}
+
+type UpdateUserProfileRow struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	Username            string             `json:"username"`
+	PasswordHash        string             `json:"password_hash"`
+	BirthYear           pgtype.Int2        `json:"birth_year"`
+	Gender              pgtype.Text        `json:"gender"`
+	CountryCode         pgtype.Text        `json:"country_code"`
+	PreferredLanguage   pgtype.Text        `json:"preferred_language"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	EmailVerified       bool               `json:"email_verified"`
+	EmailVerifiedAt     pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (UpdateUserProfileRow, error) {
+	row := q.db.QueryRow(ctx, updateUserProfile,
+		arg.ID,
+		arg.Btrim,
+		arg.BirthYear,
+		arg.Gender,
+		arg.Btrim_2,
+		arg.Btrim_3,
+	)
+	var i UpdateUserProfileRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Username,
+		&i.PasswordHash,
+		&i.BirthYear,
+		&i.Gender,
+		&i.CountryCode,
+		&i.PreferredLanguage,
+		&i.OnboardingCompleted,
+		&i.EmailVerified,
+		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

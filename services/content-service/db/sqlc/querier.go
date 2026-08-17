@@ -19,6 +19,8 @@ type Querier interface {
 	DeleteVideo(ctx context.Context, id pgtype.UUID) error
 	GetCategoryByID(ctx context.Context, id pgtype.UUID) (ContentServiceCategory, error)
 	GetCategoryByName(ctx context.Context, name string) (ContentServiceCategory, error)
+	GetOrCreateCategory(ctx context.Context, arg GetOrCreateCategoryParams) (ContentServiceCategory, error)
+	GetOrCreateTag(ctx context.Context, arg GetOrCreateTagParams) (ContentServiceTag, error)
 	GetTagByID(ctx context.Context, id pgtype.UUID) (ContentServiceTag, error)
 	GetTagByName(ctx context.Context, name string) (ContentServiceTag, error)
 	GetVideoByID(ctx context.Context, id pgtype.UUID) (ContentServiceVideo, error)

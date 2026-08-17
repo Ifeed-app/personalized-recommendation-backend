@@ -7,6 +7,7 @@ import (
 	"backend-diplomski/services/interaction-service/internal/config"
 	interactiongrpc "backend-diplomski/services/interaction-service/internal/grpc"
 	"backend-diplomski/shared/auth"
+	"context"
 	_ "fmt"
 	"log"
 	"net"
@@ -15,7 +16,19 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
+)
+
+const (
+	createInteractionMethod = "/interaction.v1.InteractionService/CreateInteraction"
+
+	recordWatchSessionMethod = "/interaction.v1.InteractionService/RecordWatchSession"
+
+	getVideoInteractionSummaryMethod = "/interaction.v1.InteractionService/GetVideoInteractionSummary"
+
+	getUserInteractionHistoryMethod = "/interaction.v1.InteractionService/GetUserInteractionHistory"
 )
 
 func main() {
@@ -29,12 +42,13 @@ func main() {
 
 	queries := sqlc.New(dbPool)
 
-	startGRPCServer(cfg.GRPCPort, cfg.JWTSecret, queries)
+	startGRPCServer(cfg.GRPCPort, cfg.JWTSecret, cfg.RecommendationSecretToken, queries)
 }
 
 func startGRPCServer(
 	port string,
 	jwtSecret string,
+	recommendationServiceToken string,
 	queries *sqlc.Queries,
 ) {
 	listener, err := net.Listen("tcp", ":"+port)
@@ -54,9 +68,16 @@ func startGRPCServer(
 	authInterceptor := auth.NewUnaryAuthInterceptor(
 		jwtManager,
 	)
+
+	serviceAuth := auth.NewServiceAuthInterceptor(
+		recommendationServiceToken,
+		"recommendation-service")
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(
-			authInterceptor.Intercept))
+			interactionServiceUnaryInterceptor(
+				authInterceptor,
+				serviceAuth)),
+	)
 
 	interactionServer := interactiongrpc.NewServer(queries)
 
@@ -77,5 +98,43 @@ func startGRPCServer(
 			"failed to serve interaction-service gRPC: %v",
 			err,
 		)
+	}
+}
+
+func interactionServiceUnaryInterceptor(
+	userAuth *auth.UnaryAuthInterceptor,
+	serviceAuth *auth.ServiceAuthInterceptor,
+) grpc.UnaryServerInterceptor {
+
+	return func(
+		ctx context.Context,
+		req any,
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (any, error) {
+
+		switch info.FullMethod {
+
+		case createInteractionMethod,
+			recordWatchSessionMethod,
+			getVideoInteractionSummaryMethod:
+
+			return userAuth.Intercept(
+				ctx,
+				req,
+				info,
+				handler,
+			)
+
+		case getUserInteractionHistoryMethod:
+
+			return handler(ctx, req)
+
+		default:
+			return nil, status.Error(
+				codes.PermissionDenied,
+				"method access policy is not configured",
+			)
+		}
 	}
 }

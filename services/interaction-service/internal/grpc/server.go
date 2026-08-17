@@ -232,6 +232,60 @@ func (s *Server) GetVideoInteractionSummary(
 	}, nil
 }
 
+func (s *Server) GetUserInteractionHistory(
+	ctx context.Context,
+	req *interactionv1.GetUserInteractionHistoryRequest) (
+	*interactionv1.GetUserInteractionHistoryResponse, error) {
+
+	userID, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(
+			codes.InvalidArgument,
+			"invalid user id",
+		)
+	}
+
+	rows, err := s.queries.GetUserInteractionHistory(
+		ctx,
+		toPgUUID(userID),
+	)
+	if err != nil {
+		return nil, status.Error(
+			codes.Internal,
+			"failed to get user interaction history",
+		)
+	}
+
+	response := &interactionv1.GetUserInteractionHistoryResponse{
+		Interactions: make(
+			[]*interactionv1.UserVideoInteraction,
+			0,
+			len(rows),
+		),
+	}
+
+	for _, row := range rows {
+		if !row.VideoID.Valid {
+			continue
+		}
+
+		response.Interactions = append(
+			response.Interactions,
+			&interactionv1.UserVideoInteraction{
+				VideoId:             uuid.UUID(row.VideoID.Bytes).String(),
+				Liked:               row.Liked,
+				Unliked:             row.Unliked,
+				Skipped:             row.Skipped,
+				TotalWatchedSeconds: row.TotalWatchedSeconds,
+				WatchSessionCount:   row.WatchSessionCount,
+				CompletedCount:      row.CompletedCount,
+			},
+		)
+	}
+
+	return response, nil
+}
+
 func mapInteractionType(
 	value interactionv1.InteractionType,
 ) (string, error) {
@@ -285,4 +339,11 @@ func timestampToString(value pgtype.Timestamptz) string {
 	}
 
 	return value.Time.UTC().Format(time.RFC3339Nano)
+}
+
+func toPgUUID(id uuid.UUID) pgtype.UUID {
+	return pgtype.UUID{
+		Bytes: id,
+		Valid: true,
+	}
 }

@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ContentService_CreateVideo_FullMethodName    = "/content.v1.ContentService/CreateVideo"
-	ContentService_ListFeedVideos_FullMethodName = "/content.v1.ContentService/ListFeedVideos"
+	ContentService_CreateVideo_FullMethodName      = "/content.v1.ContentService/CreateVideo"
+	ContentService_ListFeedVideos_FullMethodName   = "/content.v1.ContentService/ListFeedVideos"
+	ContentService_GetVideoMetadata_FullMethodName = "/content.v1.ContentService/GetVideoMetadata"
 )
 
 // ContentServiceClient is the client API for ContentService service.
@@ -29,6 +30,7 @@ const (
 type ContentServiceClient interface {
 	CreateVideo(ctx context.Context, in *CreateVideoRequest, opts ...grpc.CallOption) (*CreateVideoResponse, error)
 	ListFeedVideos(ctx context.Context, in *ListFeedVideosRequest, opts ...grpc.CallOption) (*ListFeedVideosResponse, error)
+	GetVideoMetadata(ctx context.Context, in *GetVideoMetadataRequest, opts ...grpc.CallOption) (*GetVideoMetadataResponse, error)
 }
 
 type contentServiceClient struct {
@@ -59,12 +61,23 @@ func (c *contentServiceClient) ListFeedVideos(ctx context.Context, in *ListFeedV
 	return out, nil
 }
 
+func (c *contentServiceClient) GetVideoMetadata(ctx context.Context, in *GetVideoMetadataRequest, opts ...grpc.CallOption) (*GetVideoMetadataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetVideoMetadataResponse)
+	err := c.cc.Invoke(ctx, ContentService_GetVideoMetadata_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ContentServiceServer is the server API for ContentService service.
 // All implementations must embed UnimplementedContentServiceServer
 // for forward compatibility.
 type ContentServiceServer interface {
 	CreateVideo(context.Context, *CreateVideoRequest) (*CreateVideoResponse, error)
 	ListFeedVideos(context.Context, *ListFeedVideosRequest) (*ListFeedVideosResponse, error)
+	GetVideoMetadata(context.Context, *GetVideoMetadataRequest) (*GetVideoMetadataResponse, error)
 	mustEmbedUnimplementedContentServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedContentServiceServer) CreateVideo(context.Context, *CreateVid
 }
 func (UnimplementedContentServiceServer) ListFeedVideos(context.Context, *ListFeedVideosRequest) (*ListFeedVideosResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListFeedVideos not implemented")
+}
+func (UnimplementedContentServiceServer) GetVideoMetadata(context.Context, *GetVideoMetadataRequest) (*GetVideoMetadataResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetVideoMetadata not implemented")
 }
 func (UnimplementedContentServiceServer) mustEmbedUnimplementedContentServiceServer() {}
 func (UnimplementedContentServiceServer) testEmbeddedByValue()                        {}
@@ -138,6 +154,24 @@ func _ContentService_ListFeedVideos_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ContentService_GetVideoMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetVideoMetadataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContentServiceServer).GetVideoMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ContentService_GetVideoMetadata_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContentServiceServer).GetVideoMetadata(ctx, req.(*GetVideoMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ContentService_ServiceDesc is the grpc.ServiceDesc for ContentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var ContentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListFeedVideos",
 			Handler:    _ContentService_ListFeedVideos_Handler,
+		},
+		{
+			MethodName: "GetVideoMetadata",
+			Handler:    _ContentService_GetVideoMetadata_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -11,13 +11,30 @@ import (
 )
 
 type Querier interface {
+	CompleteUserOnboarding(ctx context.Context, id pgtype.UUID) (CompleteUserOnboardingRow, error)
+	CountActiveEmailVerificationTokens(ctx context.Context, userID pgtype.UUID) (int64, error)
+	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (UserServiceEmailVerificationToken, error)
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (UserServiceRefreshToken, error)
-	CreateUser(ctx context.Context, arg CreateUserParams) (UserServiceUser, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
+	CreateUserInterest(ctx context.Context, arg CreateUserInterestParams) (UserServiceUserInterest, error)
+	DeleteAllUserInterests(ctx context.Context, userID pgtype.UUID) error
+	DeleteExpiredEmailVerificationTokens(ctx context.Context) error
+	GetEmailVerificationTokenByHash(ctx context.Context, tokenHash string) (UserServiceEmailVerificationToken, error)
 	GetRefreshTokenByToken(ctx context.Context, token string) (UserServiceRefreshToken, error)
-	GetUserByEmail(ctx context.Context, email string) (UserServiceUser, error)
-	GetUserByID(ctx context.Context, id pgtype.UUID) (UserServiceUser, error)
+	GetUserByEmail(ctx context.Context, btrim string) (GetUserByEmailRow, error)
+	GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDRow, error)
+	GetUserByLoginIdentifier(ctx context.Context, lower string) (GetUserByLoginIdentifierRow, error)
+	GetUserByUsername(ctx context.Context, btrim string) (GetUserByUsernameRow, error)
+	GetValidEmailVerificationToken(ctx context.Context, tokenHash string) (UserServiceEmailVerificationToken, error)
+	InvalidateUserEmailVerificationTokens(ctx context.Context, userID pgtype.UUID) error
+	IsEmailVerified(ctx context.Context, id pgtype.UUID) (bool, error)
+	ListUserInterests(ctx context.Context, userID pgtype.UUID) ([]UserServiceUserInterest, error)
+	MarkEmailVerificationTokenUsed(ctx context.Context, id pgtype.UUID) (UserServiceEmailVerificationToken, error)
+	MarkEmailVerified(ctx context.Context, id pgtype.UUID) (MarkEmailVerifiedRow, error)
+	MarkUserEmailVerified(ctx context.Context, id pgtype.UUID) error
 	RevokeRefreshToken(ctx context.Context, token string) error
-	UpdateUser(ctx context.Context, arg UpdateUserParams) (UserServiceUser, error)
+	UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (UpdateUserProfileRow, error)
+	UpsertUserInterest(ctx context.Context, arg UpsertUserInterestParams) (UserServiceUserInterest, error)
 }
 
 var _ Querier = (*Queries)(nil)
