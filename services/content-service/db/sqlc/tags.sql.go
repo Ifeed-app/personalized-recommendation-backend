@@ -53,6 +53,30 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (ContentSe
 	return i, err
 }
 
+const getOrCreateTag = `-- name: GetOrCreateTag :one
+INSERT INTO content_service.tags (
+    id,
+    name
+) VALUES (
+             $1, $2
+         )
+ON CONFLICT (name)
+    DO UPDATE SET name = EXCLUDED.name
+RETURNING id, name, created_at
+`
+
+type GetOrCreateTagParams struct {
+	ID   pgtype.UUID `json:"id"`
+	Name string      `json:"name"`
+}
+
+func (q *Queries) GetOrCreateTag(ctx context.Context, arg GetOrCreateTagParams) (ContentServiceTag, error) {
+	row := q.db.QueryRow(ctx, getOrCreateTag, arg.ID, arg.Name)
+	var i ContentServiceTag
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
 const getTagByID = `-- name: GetTagByID :one
 SELECT id, name, created_at
 FROM content_service.tags

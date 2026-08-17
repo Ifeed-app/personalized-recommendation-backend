@@ -41,3 +41,14 @@ FROM content_service.tags t
               ON vt.tag_id = t.id
 WHERE vt.video_id = $1
 ORDER BY t.name ASC;
+
+-- name: GetOrCreateTag :one
+INSERT INTO content_service.tags (
+    id,
+    name
+) VALUES (
+             $1, $2
+         )
+ON CONFLICT (name)
+    DO UPDATE SET name = EXCLUDED.name
+RETURNING id, name, created_at;

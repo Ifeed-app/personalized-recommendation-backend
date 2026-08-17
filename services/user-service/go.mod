@@ -9,10 +9,13 @@ require (
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/spf13/viper v1.21.0
 	golang.org/x/crypto v0.51.0
-	google.golang.org/grpc v1.82.1
+	google.golang.org/grpc v1.83.0
 )
 
-require backend-diplomski/shared v0.0.0
+require (
+	backend-diplomski/shared v0.0.0
+	github.com/rabbitmq/amqp091-go v1.13.0
+)
 
 replace backend-diplomski/proto => ../../proto
 

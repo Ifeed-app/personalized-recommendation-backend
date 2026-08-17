@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,10 +29,22 @@ func NewServer(queries *sqlc.Queries, storage *storage.MinioStorage) *Server {
 	}
 }
 
-func (s *Server) CreateVideo(ctx context.Context, req *contentv1.CreateVideoRequest) (*contentv1.CreateVideoResponse, error) {
+func (s *Server) CreateVideo(
+	ctx context.Context,
+	req *contentv1.CreateVideoRequest,
+) (*contentv1.CreateVideoResponse, error) {
+
+	log.Printf(
+		"CREATE VIDEO RECEIVED storageKey=%s categories=%v tags=%v",
+		req.GetStroageKey(),
+		req.GetCategories(),
+		req.GetTags(),
+	)
+
 	if req.Title == "" {
 		return nil, fmt.Errorf("title is required")
 	}
+
 	if req.StroageKey == "" {
 		return nil, fmt.Errorf("storage key is required")
 	}
@@ -42,33 +56,129 @@ func (s *Server) CreateVideo(ctx context.Context, req *contentv1.CreateVideoRequ
 	if req.Status == "" {
 		req.Status = "READY"
 	}
-	existingVideo, err := s.queries.GetVideoByStorageKey(ctx, req.StroageKey)
+
+	var video sqlc.ContentServiceVideo
+
+	existingVideo, err := s.queries.GetVideoByStorageKey(
+		ctx,
+		req.StroageKey,
+	)
+
 	if err == nil {
-		return &contentv1.CreateVideoResponse{
-			Id:         uuid.UUID(existingVideo.ID.Bytes).String(),
-			Title:      existingVideo.Title,
-			StroageKey: existingVideo.StorageKey,
-			Status:     existingVideo.Status,
-		}, nil
+		video = existingVideo
+	} else {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf(
+				"failed to check existing video: %w",
+				err,
+			)
+		}
+
+		videoID := uuid.New()
+
+		video, err = s.queries.CreateVideo(
+			ctx,
+			sqlc.CreateVideoParams{
+				ID:              toPgUUID(videoID),
+				CreatorID:       nullPgUUID(),
+				Title:           req.Title,
+				Description:     nullableText(req.Description),
+				StorageKey:      req.StroageKey,
+				ThumbnailKey:    nullableText(req.ThumbnailKey),
+				MimeType:        req.MimeType,
+				DurationSeconds: req.DurationSecond,
+				Status:          req.Status,
+			},
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to create video: %w",
+				err,
+			)
+		}
 	}
-	if !errors.Is(err, pgx.ErrNoRows) {
-		return nil, fmt.Errorf("failed to check existing video: %w", err)
+
+	for _, rawCategory := range req.GetCategories() {
+		categoryName := strings.ToLower(
+			strings.TrimSpace(rawCategory),
+		)
+
+		if categoryName == "" {
+			continue
+		}
+
+		category, err := s.queries.GetOrCreateCategory(
+			ctx,
+			sqlc.GetOrCreateCategoryParams{
+				ID:   toPgUUID(uuid.New()),
+				Name: categoryName,
+			},
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to get or create category %q: %w",
+				categoryName,
+				err,
+			)
+		}
+
+		if err := s.queries.AddVideoCategory(
+			ctx,
+			sqlc.AddVideoCategoryParams{
+				VideoID:    video.ID,
+				CategoryID: category.ID,
+			},
+		); err != nil {
+			return nil, fmt.Errorf(
+				"failed to add category %q to video: %w",
+				categoryName,
+				err,
+			)
+		}
 	}
-	videoID := uuid.New()
-	video, err := s.queries.CreateVideo(ctx, sqlc.CreateVideoParams{
-		ID:              toPgUUID(videoID),
-		CreatorID:       nullPgUUID(),
-		Title:           req.Title,
-		Description:     nullableText(req.Description),
-		StorageKey:      req.StroageKey,
-		ThumbnailKey:    nullableText(req.ThumbnailKey),
-		MimeType:        req.MimeType,
-		DurationSeconds: req.DurationSecond,
-		Status:          req.Status,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create video: %w", err)
+
+	for _, rawTag := range req.GetTags() {
+		tagName := strings.ToLower(
+			strings.TrimSpace(rawTag),
+		)
+
+		if tagName == "" {
+			continue
+		}
+
+		tag, err := s.queries.GetOrCreateTag(
+			ctx,
+			sqlc.GetOrCreateTagParams{
+				ID:   toPgUUID(uuid.New()),
+				Name: tagName,
+			},
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to get or create tag %q: %w",
+				tagName,
+				err,
+			)
+		}
+
+		if err := s.queries.AddVideoTag(
+			ctx,
+			sqlc.AddVideoTagParams{
+				VideoID: video.ID,
+				TagID:   tag.ID,
+			},
+		); err != nil {
+			return nil, fmt.Errorf(
+				"failed to add tag %q to video: %w",
+				tagName,
+				err,
+			)
+		}
 	}
+
 	return &contentv1.CreateVideoResponse{
 		Id:         uuid.UUID(video.ID.Bytes).String(),
 		Title:      video.Title,
@@ -76,7 +186,6 @@ func (s *Server) CreateVideo(ctx context.Context, req *contentv1.CreateVideoRequ
 		Status:     video.Status,
 	}, nil
 }
-
 func (s *Server) ListFeedVideos(ctx context.Context, req *contentv1.ListFeedVideosRequest) (*contentv1.ListFeedVideosResponse, error) {
 	limit := req.Limit
 	if limit <= 0 || limit > 50 {
@@ -115,6 +224,61 @@ func (s *Server) ListFeedVideos(ctx context.Context, req *contentv1.ListFeedVide
 			CreatedAt:      video.CreatedAt.Time.Format(time.RFC3339),
 		})
 	}
+	return response, nil
+}
+
+func (s *Server) GetVideoMetadata(ctx context.Context, req *contentv1.GetVideoMetadataRequest) (*contentv1.GetVideoMetadataResponse, error) {
+	videoID, err := uuid.Parse(req.GetVideoId())
+	if err != nil {
+		return nil, fmt.Errorf("invalid video id: %w", err)
+	}
+
+	categories, err := s.queries.ListCategoriesByVideoID(
+		ctx,
+		toPgUUID(videoID),
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to list video categories: %w",
+			err,
+		)
+	}
+
+	tags, err := s.queries.ListTagsByVideoID(
+		ctx,
+		toPgUUID(videoID),
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to list video tags: %w",
+			err,
+		)
+	}
+
+	response := &contentv1.GetVideoMetadataResponse{
+		VideoId: videoID.String(),
+	}
+
+	for _, category := range categories {
+		response.Categories = append(
+			response.Categories,
+			&contentv1.Category{
+				Id:   uuid.UUID(category.ID.Bytes).String(),
+				Name: category.Name,
+			},
+		)
+	}
+
+	for _, tag := range tags {
+		response.Tags = append(
+			response.Tags,
+			&contentv1.Tag{
+				Id:   uuid.UUID(tag.ID.Bytes).String(),
+				Name: tag.Name,
+			},
+		)
+	}
+
 	return response, nil
 }
 

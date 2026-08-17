@@ -22,6 +22,7 @@ const (
 	InteractionService_CreateInteraction_FullMethodName          = "/interaction.v1.InteractionService/CreateInteraction"
 	InteractionService_RecordWatchSession_FullMethodName         = "/interaction.v1.InteractionService/RecordWatchSession"
 	InteractionService_GetVideoInteractionSummary_FullMethodName = "/interaction.v1.InteractionService/GetVideoInteractionSummary"
+	InteractionService_GetUserInteractionHistory_FullMethodName  = "/interaction.v1.InteractionService/GetUserInteractionHistory"
 )
 
 // InteractionServiceClient is the client API for InteractionService service.
@@ -31,6 +32,7 @@ type InteractionServiceClient interface {
 	CreateInteraction(ctx context.Context, in *CreateInteractionRequest, opts ...grpc.CallOption) (*CreateInteractionResponse, error)
 	RecordWatchSession(ctx context.Context, in *RecordWatchSessionRequest, opts ...grpc.CallOption) (*RecordWatchSessionResponse, error)
 	GetVideoInteractionSummary(ctx context.Context, in *GetVideoInteractionSummaryRequest, opts ...grpc.CallOption) (*GetVideoInteractionSummaryResponse, error)
+	GetUserInteractionHistory(ctx context.Context, in *GetUserInteractionHistoryRequest, opts ...grpc.CallOption) (*GetUserInteractionHistoryResponse, error)
 }
 
 type interactionServiceClient struct {
@@ -71,6 +73,16 @@ func (c *interactionServiceClient) GetVideoInteractionSummary(ctx context.Contex
 	return out, nil
 }
 
+func (c *interactionServiceClient) GetUserInteractionHistory(ctx context.Context, in *GetUserInteractionHistoryRequest, opts ...grpc.CallOption) (*GetUserInteractionHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserInteractionHistoryResponse)
+	err := c.cc.Invoke(ctx, InteractionService_GetUserInteractionHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InteractionServiceServer is the server API for InteractionService service.
 // All implementations must embed UnimplementedInteractionServiceServer
 // for forward compatibility.
@@ -78,6 +90,7 @@ type InteractionServiceServer interface {
 	CreateInteraction(context.Context, *CreateInteractionRequest) (*CreateInteractionResponse, error)
 	RecordWatchSession(context.Context, *RecordWatchSessionRequest) (*RecordWatchSessionResponse, error)
 	GetVideoInteractionSummary(context.Context, *GetVideoInteractionSummaryRequest) (*GetVideoInteractionSummaryResponse, error)
+	GetUserInteractionHistory(context.Context, *GetUserInteractionHistoryRequest) (*GetUserInteractionHistoryResponse, error)
 	mustEmbedUnimplementedInteractionServiceServer()
 }
 
@@ -96,6 +109,9 @@ func (UnimplementedInteractionServiceServer) RecordWatchSession(context.Context,
 }
 func (UnimplementedInteractionServiceServer) GetVideoInteractionSummary(context.Context, *GetVideoInteractionSummaryRequest) (*GetVideoInteractionSummaryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetVideoInteractionSummary not implemented")
+}
+func (UnimplementedInteractionServiceServer) GetUserInteractionHistory(context.Context, *GetUserInteractionHistoryRequest) (*GetUserInteractionHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserInteractionHistory not implemented")
 }
 func (UnimplementedInteractionServiceServer) mustEmbedUnimplementedInteractionServiceServer() {}
 func (UnimplementedInteractionServiceServer) testEmbeddedByValue()                            {}
@@ -172,6 +188,24 @@ func _InteractionService_GetVideoInteractionSummary_Handler(srv interface{}, ctx
 	return interceptor(ctx, in, info, handler)
 }
 
+func _InteractionService_GetUserInteractionHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserInteractionHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InteractionServiceServer).GetUserInteractionHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InteractionService_GetUserInteractionHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InteractionServiceServer).GetUserInteractionHistory(ctx, req.(*GetUserInteractionHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // InteractionService_ServiceDesc is the grpc.ServiceDesc for InteractionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +224,10 @@ var InteractionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetVideoInteractionSummary",
 			Handler:    _InteractionService_GetVideoInteractionSummary_Handler,
+		},
+		{
+			MethodName: "GetUserInteractionHistory",
+			Handler:    _InteractionService_GetUserInteractionHistory_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
