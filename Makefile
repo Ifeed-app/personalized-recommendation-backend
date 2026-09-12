@@ -101,7 +101,9 @@ proto:
 		$(PROTO_DIR)/user/v1/*.proto \
 		$(PROTO_DIR)/content/v1/*.proto \
 		$(PROTO_DIR)/interaction/v1/*.proto \
-		$(PROTO_DIR)/upload/v1/*.proto
+		$(PROTO_DIR)/upload/v1/*.proto \
+		$(PROTO_DIR)/recommendation/v1/*.proto
+
 
 proto-clean:
 	rm -rf $(PROTO_GEN_DIR)/*

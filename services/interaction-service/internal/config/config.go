@@ -16,6 +16,7 @@ type Config struct {
 	DBSSLMode                 string
 	JWTSecret                 string
 	RecommendationSecretToken string
+	InteractionSimulatorToken string
 }
 
 func Load() Config {
@@ -40,6 +41,7 @@ func Load() Config {
 		DBSSLMode:                 viper.GetString("DB_SSLMODE"),
 		JWTSecret:                 viper.GetString("JWT_SECRET"),
 		RecommendationSecretToken: viper.GetString("RECOMMENDATION_SERVICE_TOKEN"),
+		InteractionSimulatorToken: viper.GetString("INTERACTION_SIMULATOR_TOKEN"),
 	}
 
 	if cfg.GRPCPort == "" {

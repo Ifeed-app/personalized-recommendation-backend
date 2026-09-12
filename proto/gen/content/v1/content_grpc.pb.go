@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ContentService_CreateVideo_FullMethodName      = "/content.v1.ContentService/CreateVideo"
-	ContentService_ListFeedVideos_FullMethodName   = "/content.v1.ContentService/ListFeedVideos"
-	ContentService_GetVideoMetadata_FullMethodName = "/content.v1.ContentService/GetVideoMetadata"
+	ContentService_CreateVideo_FullMethodName                  = "/content.v1.ContentService/CreateVideo"
+	ContentService_ListFeedVideos_FullMethodName               = "/content.v1.ContentService/ListFeedVideos"
+	ContentService_GetVideoMetadata_FullMethodName             = "/content.v1.ContentService/GetVideoMetadata"
+	ContentService_ListRecommendationCandidates_FullMethodName = "/content.v1.ContentService/ListRecommendationCandidates"
 )
 
 // ContentServiceClient is the client API for ContentService service.
@@ -31,6 +32,7 @@ type ContentServiceClient interface {
 	CreateVideo(ctx context.Context, in *CreateVideoRequest, opts ...grpc.CallOption) (*CreateVideoResponse, error)
 	ListFeedVideos(ctx context.Context, in *ListFeedVideosRequest, opts ...grpc.CallOption) (*ListFeedVideosResponse, error)
 	GetVideoMetadata(ctx context.Context, in *GetVideoMetadataRequest, opts ...grpc.CallOption) (*GetVideoMetadataResponse, error)
+	ListRecommendationCandidates(ctx context.Context, in *ListRecommendationCandidatesRequest, opts ...grpc.CallOption) (*ListRecommendationCandidatesResponse, error)
 }
 
 type contentServiceClient struct {
@@ -71,6 +73,16 @@ func (c *contentServiceClient) GetVideoMetadata(ctx context.Context, in *GetVide
 	return out, nil
 }
 
+func (c *contentServiceClient) ListRecommendationCandidates(ctx context.Context, in *ListRecommendationCandidatesRequest, opts ...grpc.CallOption) (*ListRecommendationCandidatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRecommendationCandidatesResponse)
+	err := c.cc.Invoke(ctx, ContentService_ListRecommendationCandidates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ContentServiceServer is the server API for ContentService service.
 // All implementations must embed UnimplementedContentServiceServer
 // for forward compatibility.
@@ -78,6 +90,7 @@ type ContentServiceServer interface {
 	CreateVideo(context.Context, *CreateVideoRequest) (*CreateVideoResponse, error)
 	ListFeedVideos(context.Context, *ListFeedVideosRequest) (*ListFeedVideosResponse, error)
 	GetVideoMetadata(context.Context, *GetVideoMetadataRequest) (*GetVideoMetadataResponse, error)
+	ListRecommendationCandidates(context.Context, *ListRecommendationCandidatesRequest) (*ListRecommendationCandidatesResponse, error)
 	mustEmbedUnimplementedContentServiceServer()
 }
 
@@ -96,6 +109,9 @@ func (UnimplementedContentServiceServer) ListFeedVideos(context.Context, *ListFe
 }
 func (UnimplementedContentServiceServer) GetVideoMetadata(context.Context, *GetVideoMetadataRequest) (*GetVideoMetadataResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetVideoMetadata not implemented")
+}
+func (UnimplementedContentServiceServer) ListRecommendationCandidates(context.Context, *ListRecommendationCandidatesRequest) (*ListRecommendationCandidatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRecommendationCandidates not implemented")
 }
 func (UnimplementedContentServiceServer) mustEmbedUnimplementedContentServiceServer() {}
 func (UnimplementedContentServiceServer) testEmbeddedByValue()                        {}
@@ -172,6 +188,24 @@ func _ContentService_GetVideoMetadata_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ContentService_ListRecommendationCandidates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRecommendationCandidatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContentServiceServer).ListRecommendationCandidates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ContentService_ListRecommendationCandidates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContentServiceServer).ListRecommendationCandidates(ctx, req.(*ListRecommendationCandidatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ContentService_ServiceDesc is the grpc.ServiceDesc for ContentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +224,10 @@ var ContentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetVideoMetadata",
 			Handler:    _ContentService_GetVideoMetadata_Handler,
+		},
+		{
+			MethodName: "ListRecommendationCandidates",
+			Handler:    _ContentService_ListRecommendationCandidates_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

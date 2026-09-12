@@ -227,36 +227,118 @@ func (s *Server) ListFeedVideos(ctx context.Context, req *contentv1.ListFeedVide
 	return response, nil
 }
 
-func (s *Server) GetVideoMetadata(ctx context.Context, req *contentv1.GetVideoMetadataRequest) (*contentv1.GetVideoMetadataResponse, error) {
+func (s *Server) ListRecommendationCandidates(
+	ctx context.Context,
+	req *contentv1.ListRecommendationCandidatesRequest,
+) (*contentv1.ListRecommendationCandidatesResponse, error) {
+
+	limit := req.GetLimit()
+	if limit <= 0 {
+		limit = 100
+	}
+
+	videos, err := s.queries.ListReadyVideos(
+		ctx,
+		sqlc.ListReadyVideosParams{
+			Limit:  limit,
+			Offset: 0,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to list recommendation candidates: %w",
+			err,
+		)
+	}
+
+	response := &contentv1.ListRecommendationCandidatesResponse{}
+
+	for _, video := range videos {
+
+		categories, err := s.queries.ListCategoriesByVideoID(
+			ctx,
+			video.ID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to list categories for video %s: %w",
+				uuid.UUID(video.ID.Bytes).String(),
+				err,
+			)
+		}
+
+		candidate := &contentv1.RecommendationCandidate{
+			VideoId:        uuid.UUID(video.ID.Bytes).String(),
+			DurationSecond: video.DurationSeconds,
+		}
+
+		for _, category := range categories {
+			candidate.Categories = append(
+				candidate.Categories,
+				&contentv1.Category{
+					Id:   uuid.UUID(category.ID.Bytes).String(),
+					Name: category.Name,
+				},
+			)
+		}
+
+		response.Videos = append(
+			response.Videos,
+			candidate,
+		)
+	}
+
+	return response, nil
+}
+
+func (s *Server) GetVideoMetadata(
+	ctx context.Context,
+	req *contentv1.GetVideoMetadataRequest,
+) (*contentv1.GetVideoMetadataResponse, error) {
+
 	videoID, err := uuid.Parse(req.GetVideoId())
 	if err != nil {
 		return nil, fmt.Errorf("invalid video id: %w", err)
 	}
 
-	categories, err := s.queries.ListCategoriesByVideoID(
+	pgVideoID := toPgUUID(videoID)
+
+	video, err := s.queries.GetVideoByID(
 		ctx,
-		toPgUUID(videoID),
+		pgVideoID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"failed to list video categories: %w",
+			"failed to get video: %w",
+			err,
+		)
+	}
+
+	categories, err := s.queries.ListCategoriesByVideoID(
+		ctx,
+		pgVideoID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to list categories: %w",
 			err,
 		)
 	}
 
 	tags, err := s.queries.ListTagsByVideoID(
 		ctx,
-		toPgUUID(videoID),
+		pgVideoID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"failed to list video tags: %w",
+			"failed to list tags: %w",
 			err,
 		)
 	}
 
 	response := &contentv1.GetVideoMetadataResponse{
-		VideoId: videoID.String(),
+		VideoId:        req.GetVideoId(),
+		DurationSecond: video.DurationSeconds,
 	}
 
 	for _, category := range categories {

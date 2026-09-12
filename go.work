@@ -9,4 +9,6 @@ use (
 	./services/video-worker
 	./shared
 	./services/email-worker
+	./services/recommendation-service
+	./tools/interaction-simulator
 )

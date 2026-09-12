@@ -17,6 +17,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
@@ -41,14 +42,15 @@ func main() {
 	defer dbPool.Close()
 
 	queries := sqlc.New(dbPool)
-
-	startGRPCServer(cfg.GRPCPort, cfg.JWTSecret, cfg.RecommendationSecretToken, queries)
+	log.Printf("Interaction TOken %s", cfg.InteractionSimulatorToken)
+	startGRPCServer(cfg.GRPCPort, cfg.JWTSecret, cfg.RecommendationSecretToken, cfg.InteractionSimulatorToken, queries)
 }
 
 func startGRPCServer(
 	port string,
 	jwtSecret string,
 	recommendationServiceToken string,
+	interactionSimulatorToken string,
 	queries *sqlc.Queries,
 ) {
 	listener, err := net.Listen("tcp", ":"+port)
@@ -69,14 +71,19 @@ func startGRPCServer(
 		jwtManager,
 	)
 
-	serviceAuth := auth.NewServiceAuthInterceptor(
+	recommendationAuth := auth.NewServiceAuthInterceptor(
 		recommendationServiceToken,
 		"recommendation-service")
+
+	simulatorAuth := auth.NewServiceAuthInterceptor(
+		interactionSimulatorToken,
+		"interaction-simulator")
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(
 			interactionServiceUnaryInterceptor(
 				authInterceptor,
-				serviceAuth)),
+				recommendationAuth,
+				simulatorAuth)),
 	)
 
 	interactionServer := interactiongrpc.NewServer(queries)
@@ -103,7 +110,8 @@ func startGRPCServer(
 
 func interactionServiceUnaryInterceptor(
 	userAuth *auth.UnaryAuthInterceptor,
-	serviceAuth *auth.ServiceAuthInterceptor,
+	recommendationAuth *auth.ServiceAuthInterceptor,
+	simulatorAuth *auth.ServiceAuthInterceptor,
 ) grpc.UnaryServerInterceptor {
 
 	return func(
@@ -116,8 +124,31 @@ func interactionServiceUnaryInterceptor(
 		switch info.FullMethod {
 
 		case createInteractionMethod,
-			recordWatchSessionMethod,
-			getVideoInteractionSummaryMethod:
+			recordWatchSessionMethod:
+
+			md, _ := metadata.FromIncomingContext(ctx)
+
+			serviceNames := md.Get("x-service-name")
+
+			if len(serviceNames) > 0 &&
+				serviceNames[0] == "interaction-simulator" {
+
+				return simulatorAuth.Unary(
+					ctx,
+					req,
+					info,
+					handler,
+				)
+			}
+
+			return userAuth.Intercept(
+				ctx,
+				req,
+				info,
+				handler,
+			)
+
+		case getVideoInteractionSummaryMethod:
 
 			return userAuth.Intercept(
 				ctx,
@@ -128,7 +159,12 @@ func interactionServiceUnaryInterceptor(
 
 		case getUserInteractionHistoryMethod:
 
-			return handler(ctx, req)
+			return recommendationAuth.Unary(
+				ctx,
+				req,
+				info,
+				handler,
+			)
 
 		default:
 			return nil, status.Error(
