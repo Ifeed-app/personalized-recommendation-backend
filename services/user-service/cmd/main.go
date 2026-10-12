@@ -11,6 +11,7 @@ import (
 	auth "backend-diplomski/shared/auth"
 	"log"
 	"net"
+	"net/http"
 	"time"
 
 	"google.golang.org/grpc"
@@ -70,6 +71,16 @@ func main() {
 		emailPublisher != nil)
 	userServer := servicegrpc.NewUserServer(queries)
 	authServer := servicegrpc.NewAuthServer(pool, queries, jwtManager, cfg, emailPublisher)
+	httpMux := http.NewServeMux()
+	httpMux.HandleFunc("/verify-email", authServer.VerifyEmailHTTP)
+
+	go func() {
+		log.Printf("user-service HTTP listening on port %s", cfg.HTTPPort)
+
+		if err := http.ListenAndServe(":"+cfg.HTTPPort, httpMux); err != nil {
+			log.Fatalf("failed to serve HTTP server: %v", err)
+		}
+	}()
 	userv1.RegisterUserServiceServer(grpcServer, userServer)
 	userv1.RegisterAuthServiceServer(grpcServer, authServer)
 	log.Printf("user-service connected to database and sqlc initialized")

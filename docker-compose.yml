@@ -24,6 +24,7 @@ services:
       - rabbitmq
     environment:
       APP_PORT: ${USER_SERVICE_PORT}
+      HTTP_PORT: ${USER_SERVICE_HTTP_PORT}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USER: ${DB_USER}
@@ -36,6 +37,7 @@ services:
       EMAIL_VERIFICATION_BASE_URL: ${EMAIL_VERIFICATION_BASE_URL}
     ports:
       - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+      - "${USER_SERVICE_HTTP_PORT}:${USER_SERVICE_HTTP_PORT}"
 
   content-service:
     platform: linux/amd64
@@ -63,6 +65,9 @@ services:
       S3_REGION: ${S3_REGION}
       S3_USE_SSL: ${S3_USE_SSL}
       VIDEO_WORKER_SERVICE_TOKEN: ${VIDEO_WORKER_SERVICE_TOKEN}
+      RECOMMENDATION_SERVICE_TOKEN: ${RECOMMENDATION_SERVICE_TOKEN}
+      INTERACTION_SIMULATOR_TOKEN: ${INTERACTION_SIMULATOR_TOKEN}
+
     ports:
       - "${CONTENT_SERVICE_PORT}:${CONTENT_SERVICE_PORT}"
       - "${CONTENT_SERVICE_GRPC_PORT}:${CONTENT_SERVICE_GRPC_PORT}"
@@ -84,6 +89,7 @@ services:
       DB_NAME: ${DB_NAME}
       JWT_SECRET: ${JWT_SECRET}
       RECOMMENDATION_SERVICE_TOKEN: ${RECOMMENDATION_SERVICE_TOKEN}
+      INTERACTION_SIMULATOR_TOKEN: ${INTERACTION_SIMULATOR_TOKEN}
 
     ports:
       - "${INTERACTION_SERVICE_PORT}:${INTERACTION_SERVICE_PORT}"
@@ -121,6 +127,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: feeder_minio
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
       - "${MINIO_API_PORT}:9000"
@@ -206,6 +213,39 @@ services:
     depends_on:
       - rabbitmq
       - mailpit
+
+  recommendation-service:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: services/recommendation-service/Dockerfile
+    container_name: recommendation_service
+    restart: unless-stopped
+    environment:
+      GRPC_PORT: ${RECOMMENDATION_SERVICE_GRPC_PORT}
+      RECOMMENDATION_SERVICE_TOKEN: ${RECOMMENDATION_SERVICE_TOKEN}
+      INTERACTION_SERVICE_GRPC_URL: ${INTERACTION_SERVICE_GRPC_URL}
+      CONTENT_SERVICE_GRPC_URL:  ${CONTENT_SERVICE_GRPC_URL}
+      ML_INFERENCE_URL: ${ML_INFERENCE_URL}
+
+    ports:
+      - "${RECOMMENDATION_SERVICE_GRPC_PORT}:${RECOMMENDATION_SERVICE_GRPC_PORT}"
+
+    depends_on:
+      - interaction-service
+      - content-service
+
+  ml-inference:
+    build:
+      context: ./services/recommendation-service/ml
+      dockerfile: Dockerfile
+    container_name: ml_inference
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+
+
+
 
 volumes:
   postgres_data:

@@ -7,22 +7,24 @@ import (
 )
 
 type Config struct {
-	AppPort                 string
-	DBHost                  string
-	DBPort                  string
-	DBUser                  string
-	DBPassword              string
-	DBName                  string
-	GRPCPort                string
-	ServicePort             string
-	S3Endpoint              string
-	S3AccessKey             string
-	S3Bucket                string
-	S3SecretKey             string
-	S3Region                string
-	S3UseSSL                bool
-	S3PublicEndpoint        string
-	VideoWorkerServiceToken string
+	AppPort                   string
+	DBHost                    string
+	DBPort                    string
+	DBUser                    string
+	DBPassword                string
+	DBName                    string
+	GRPCPort                  string
+	ServicePort               string
+	S3Endpoint                string
+	S3AccessKey               string
+	S3Bucket                  string
+	S3SecretKey               string
+	S3Region                  string
+	S3UseSSL                  bool
+	S3PublicEndpoint          string
+	VideoWorkerServiceToken   string
+	RecommendationSecretToken string
+	InteractionSimulatorToken string
 }
 
 func Load() *Config {
@@ -62,6 +64,8 @@ func Load() *Config {
 		VideoWorkerServiceToken: viper.GetString(
 			"VIDEO_WORKER_SERVICE_TOKEN",
 		),
+		RecommendationSecretToken: viper.GetString("RECOMMENDATION_SERVICE_TOKEN"),
+		InteractionSimulatorToken: viper.GetString("INTERACTION_SIMULATOR_TOKEN"),
 	}
 
 	log.Printf(

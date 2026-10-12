@@ -18,14 +18,17 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
 const (
-	createVideoMethod = "/content.v1.ContentService/CreateVideo"
-	listFeedMethod    = "/content.v1.ContentService/ListFeedVideos"
-	metaData          = "/content.v1.ContentService/GetVideoMetadata"
+	createVideoMethod              = "/content.v1.ContentService/CreateVideo"
+	listFeedMethod                 = "/content.v1.ContentService/ListFeedVideos"
+	metaData                       = "/content.v1.ContentService/GetVideoMetadata"
+	recommendationCandidatesMethod = "/content.v1.ContentService/ListRecommendationCandidates"
+	getVideosByIdsMethod           = "/content.v1.ContentService/GetVideosByIds"
 )
 
 func main() {
@@ -40,25 +43,51 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create minio storage: %v", err)
 	}
-	startGRPCServer(cfg.GRPCPort, cfg.VideoWorkerServiceToken, quries, minioStorage)
+	startGRPCServer(cfg.GRPCPort, cfg.VideoWorkerServiceToken, cfg.RecommendationSecretToken, cfg.InteractionSimulatorToken, quries, minioStorage)
 }
 
-func startGRPCServer(port string, videWorkerServiceToken string, queries *sqlc.Queries, minioStorage *storage.MinioStorage) {
+func startGRPCServer(
+	port string,
+	videoWorkerServiceToken string,
+	recommendationServiceToken string,
+	interactionSimulatorToken string,
+	queries *sqlc.Queries,
+	minioStorage *storage.MinioStorage,
+) {
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalf("failed to listen on gRPC port %s: %v", port, err)
 	}
 
-	serviceAuth := auth.NewServiceAuthInterceptor(
-		videWorkerServiceToken,
-		"video-worker")
+	videoWorkerAuth := auth.NewServiceAuthInterceptor(
+		videoWorkerServiceToken,
+		"video-worker",
+	)
+
+	recommendationAuth := auth.NewServiceAuthInterceptor(
+		recommendationServiceToken,
+		"recommendation-service",
+	)
+
+	simulatorAuth := auth.NewServiceAuthInterceptor(
+		interactionSimulatorToken,
+		"interaction-simulator")
+
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(contentServiceUnaryInterceptor(serviceAuth)))
+		grpc.UnaryInterceptor(
+			contentServiceUnaryInterceptor(
+				videoWorkerAuth,
+				recommendationAuth,
+				simulatorAuth,
+			),
+		),
+	)
 
 	contentv1.RegisterContentServiceServer(
 		grpcServer,
 		contentgrpc.NewServer(queries, minioStorage),
 	)
+
 	reflection.Register(grpcServer)
 
 	log.Printf("content-service gRPC listening on port %s", port)
@@ -69,20 +98,25 @@ func startGRPCServer(port string, videWorkerServiceToken string, queries *sqlc.Q
 }
 
 func contentServiceUnaryInterceptor(
-	serviceAuth *auth.ServiceAuthInterceptor,
+	videoWorkerAuth *auth.ServiceAuthInterceptor,
+	recommendationAuth *auth.ServiceAuthInterceptor,
+	simulatorAuth *auth.ServiceAuthInterceptor,
 ) grpc.UnaryServerInterceptor {
+
 	return func(
 		ctx context.Context,
 		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
+
 		switch info.FullMethod {
-		case listFeedMethod:
+
+		case listFeedMethod, getVideosByIdsMethod:
 			return handler(ctx, req)
 
 		case createVideoMethod:
-			return serviceAuth.Unary(
+			return videoWorkerAuth.Unary(
 				ctx,
 				req,
 				info,
@@ -90,12 +124,35 @@ func contentServiceUnaryInterceptor(
 			)
 
 		case metaData:
-			return serviceAuth.Unary(
+			return recommendationAuth.Unary(
 				ctx,
 				req,
 				info,
 				handler,
 			)
+
+		case recommendationCandidatesMethod:
+			md, _ := metadata.FromIncomingContext(ctx)
+			serviceNames := md.Get("x-service-name")
+
+			if len(serviceNames) > 0 &&
+				serviceNames[0] == "interaction-simulator" {
+
+				return simulatorAuth.Unary(
+					ctx,
+					req,
+					info,
+					handler,
+				)
+			}
+
+			return recommendationAuth.Unary(
+				ctx,
+				req,
+				info,
+				handler,
+			)
+
 		default:
 			return nil, status.Error(
 				codes.PermissionDenied,

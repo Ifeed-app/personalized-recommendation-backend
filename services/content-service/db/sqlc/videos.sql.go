@@ -227,7 +227,7 @@ SELECT
     updated_at
 FROM content_service.videos
 WHERE status = 'READY'
-ORDER BY created_at DESC
+ORDER BY RANDOM()
 LIMIT $1 OFFSET $2
 `
 

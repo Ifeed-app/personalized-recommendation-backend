@@ -14,6 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Server struct {
@@ -227,36 +229,118 @@ func (s *Server) ListFeedVideos(ctx context.Context, req *contentv1.ListFeedVide
 	return response, nil
 }
 
-func (s *Server) GetVideoMetadata(ctx context.Context, req *contentv1.GetVideoMetadataRequest) (*contentv1.GetVideoMetadataResponse, error) {
+func (s *Server) ListRecommendationCandidates(
+	ctx context.Context,
+	req *contentv1.ListRecommendationCandidatesRequest,
+) (*contentv1.ListRecommendationCandidatesResponse, error) {
+
+	limit := req.GetLimit()
+	if limit <= 0 {
+		limit = 100
+	}
+
+	videos, err := s.queries.ListReadyVideos(
+		ctx,
+		sqlc.ListReadyVideosParams{
+			Limit:  limit,
+			Offset: 0,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to list recommendation candidates: %w",
+			err,
+		)
+	}
+
+	response := &contentv1.ListRecommendationCandidatesResponse{}
+
+	for _, video := range videos {
+
+		categories, err := s.queries.ListCategoriesByVideoID(
+			ctx,
+			video.ID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to list categories for video %s: %w",
+				uuid.UUID(video.ID.Bytes).String(),
+				err,
+			)
+		}
+
+		candidate := &contentv1.RecommendationCandidate{
+			VideoId:        uuid.UUID(video.ID.Bytes).String(),
+			DurationSecond: video.DurationSeconds,
+		}
+
+		for _, category := range categories {
+			candidate.Categories = append(
+				candidate.Categories,
+				&contentv1.Category{
+					Id:   uuid.UUID(category.ID.Bytes).String(),
+					Name: category.Name,
+				},
+			)
+		}
+
+		response.Videos = append(
+			response.Videos,
+			candidate,
+		)
+	}
+
+	return response, nil
+}
+
+func (s *Server) GetVideoMetadata(
+	ctx context.Context,
+	req *contentv1.GetVideoMetadataRequest,
+) (*contentv1.GetVideoMetadataResponse, error) {
+
 	videoID, err := uuid.Parse(req.GetVideoId())
 	if err != nil {
 		return nil, fmt.Errorf("invalid video id: %w", err)
 	}
 
-	categories, err := s.queries.ListCategoriesByVideoID(
+	pgVideoID := toPgUUID(videoID)
+
+	video, err := s.queries.GetVideoByID(
 		ctx,
-		toPgUUID(videoID),
+		pgVideoID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"failed to list video categories: %w",
+			"failed to get video: %w",
+			err,
+		)
+	}
+
+	categories, err := s.queries.ListCategoriesByVideoID(
+		ctx,
+		pgVideoID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to list categories: %w",
 			err,
 		)
 	}
 
 	tags, err := s.queries.ListTagsByVideoID(
 		ctx,
-		toPgUUID(videoID),
+		pgVideoID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"failed to list video tags: %w",
+			"failed to list tags: %w",
 			err,
 		)
 	}
 
 	response := &contentv1.GetVideoMetadataResponse{
-		VideoId: videoID.String(),
+		VideoId:        req.GetVideoId(),
+		DurationSecond: video.DurationSeconds,
 	}
 
 	for _, category := range categories {
@@ -282,6 +366,81 @@ func (s *Server) GetVideoMetadata(ctx context.Context, req *contentv1.GetVideoMe
 	return response, nil
 }
 
+func (s *Server) GetVideosByIds(
+	ctx context.Context,
+	req *contentv1.GetVideosByIdsRequest,
+) (*contentv1.GetVideosByIdsResponse, error) {
+
+	if len(req.GetVideoIds()) == 0 {
+		return &contentv1.GetVideosByIdsResponse{
+			Videos: []*contentv1.FeedVideo{},
+		}, nil
+	}
+
+	response := &contentv1.GetVideosByIdsResponse{
+		Videos: make(
+			[]*contentv1.FeedVideo,
+			0,
+			len(req.GetVideoIds()),
+		),
+	}
+
+	for _, videoIDString := range req.GetVideoIds() {
+
+		videoID, err := uuid.Parse(videoIDString)
+		if err != nil {
+			return nil, status.Errorf(
+				codes.InvalidArgument,
+				"invalid video id: %s",
+				videoIDString,
+			)
+		}
+
+		pgVideoID := toPgUUID(videoID)
+
+		video, err := s.queries.GetVideoByID(
+			ctx,
+			pgVideoID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to get video %s: %w",
+				videoIDString,
+				err,
+			)
+		}
+
+		videoURL, err := s.storage.PresignedObject(
+			ctx,
+			video.StorageKey,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to create presigned url for video %s: %w",
+				videoIDString,
+				err,
+			)
+		}
+
+		response.Videos = append(
+			response.Videos,
+			&contentv1.FeedVideo{
+				Id:             videoIDString,
+				Title:          video.Title,
+				Description:    video.Description.String,
+				StroageKey:     video.StorageKey,
+				VideoUrl:       videoURL,
+				ThumbnailKey:   video.ThumbnailKey.String,
+				MimeType:       video.MimeType,
+				DurationSecond: video.DurationSeconds,
+				Status:         video.Status,
+				CreatedAt:      video.CreatedAt.Time.Format(time.RFC3339),
+			},
+		)
+	}
+
+	return response, nil
+}
 func toPgUUID(id uuid.UUID) pgtype.UUID {
 	return pgtype.UUID{
 		Bytes: id,
