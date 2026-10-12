@@ -28,6 +28,7 @@ const (
 	listFeedMethod                 = "/content.v1.ContentService/ListFeedVideos"
 	metaData                       = "/content.v1.ContentService/GetVideoMetadata"
 	recommendationCandidatesMethod = "/content.v1.ContentService/ListRecommendationCandidates"
+	getVideosByIdsMethod           = "/content.v1.ContentService/GetVideosByIds"
 )
 
 func main() {
@@ -111,7 +112,7 @@ func contentServiceUnaryInterceptor(
 
 		switch info.FullMethod {
 
-		case listFeedMethod:
+		case listFeedMethod, getVideosByIdsMethod:
 			return handler(ctx, req)
 
 		case createVideoMethod:

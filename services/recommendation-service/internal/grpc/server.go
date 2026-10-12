@@ -4,11 +4,12 @@ import (
 	recommendationv1 "backend-diplomski/proto/gen/recommendation/v1"
 	"backend-diplomski/services/recommendation-service/internal/client/content"
 	"backend-diplomski/services/recommendation-service/internal/client/interaction"
-	"backend-diplomski/services/recommendation-service/internal/recommendation"
+	"backend-diplomski/services/recommendation-service/internal/client/ml"
 	"context"
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 )
 
 type Server struct {
@@ -16,16 +17,29 @@ type Server struct {
 
 	interactionClient *interaction.Client
 	contentClient     *content.Client
+	mlClient          *ml.Client
 }
 
 func NewServer(
 	interactionClient *interaction.Client,
 	contentClient *content.Client,
+	mlClient *ml.Client,
 ) *Server {
 	return &Server{
 		interactionClient: interactionClient,
 		contentClient:     contentClient,
+		mlClient:          mlClient,
 	}
+}
+
+type categoryHistoryStats struct {
+	count         float64
+	positive      float64
+	negative      float64
+	likes         float64
+	unlikes       float64
+	skips         float64
+	watchRatioSum float64
 }
 
 func (s *Server) GetRecommendations(
@@ -61,7 +75,8 @@ func (s *Server) GetRecommendations(
 	}
 
 	seenVideos := make(map[string]struct{})
-	categoryScores := make(map[string]float64)
+	categoryHistory := make(map[string]*categoryHistoryStats)
+	candidateByVideoID := make(map[string]ml.Candidate)
 
 	for _, item := range history.GetInteractions() {
 
@@ -81,22 +96,66 @@ func (s *Server) GetRecommendations(
 			)
 		}
 
-		interactionScore := recommendation.CalculateInteractionScore(
-			recommendation.InteractionScoreInput{
-				Liked:               item.GetLiked(),
-				Unliked:             item.GetUnliked(),
-				Skipped:             item.GetSkipped(),
-				TotalWatchedSeconds: item.GetTotalWatchedSeconds(),
-				DurationSeconds:     metadata.GetDurationSecond(),
-			},
-		)
+		duration := float64(metadata.GetDurationSecond())
+		watchRatio := 0.0
+		if duration > 0 {
+			watchRatio = float64(item.GetTotalWatchedSeconds()) / duration
+		}
+		if watchRatio < 0 {
+			watchRatio = 0
+		}
+
+		if watchRatio > 1 {
+			watchRatio = 1
+		}
+		positive := false
+		negative := false
+
+		if item.GetLiked() {
+			positive = true
+		} else if item.GetUnliked() ||
+			item.GetSkipped() {
+			negative = true
+		} else if watchRatio >= 0.8 {
+			positive = true
+		} else if watchRatio < 0.2 {
+			negative = true
+		}
 
 		for _, category := range metadata.GetCategories() {
-			categoryScores[category.GetName()] += interactionScore
+			categoryName := category.GetName()
+			stats, exists := categoryHistory[categoryName]
+			if !exists {
+				stats = &categoryHistoryStats{}
+				categoryHistory[categoryName] = stats
+			}
+			stats.count++
+
+			if positive {
+				stats.positive++
+			}
+
+			if negative {
+				stats.negative++
+			}
+
+			if item.GetLiked() {
+				stats.likes++
+			}
+
+			if item.GetUnliked() {
+				stats.unlikes++
+			}
+
+			if item.GetSkipped() {
+				stats.skips++
+			}
+
+			stats.watchRatioSum += watchRatio
 		}
 	}
 
-	if len(categoryScores) == 0 {
+	if len(categoryHistory) == 0 {
 		return s.getColdStartRecommendations(
 			ctx,
 			limit,
@@ -104,32 +163,42 @@ func (s *Server) GetRecommendations(
 	}
 
 	log.Printf(
-		"user %s category preference profile: %+v",
+		"===== USER PREFERENCE SUMMARY: %s =====",
 		req.GetUserId(),
-		categoryScores,
 	)
 
-	candidates, err := s.contentClient.ListRecommendationCandidates(
-		ctx,
-		100,
-	)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"failed to get recommendation candidates: %w",
-			err,
+	for category, stats := range categoryHistory {
+		positiveRate := 0.0
+		averageWatchRatio := 0.0
+
+		if stats.count > 0 {
+			positiveRate = stats.positive / stats.count
+			averageWatchRatio = stats.watchRatioSum / stats.count
+		}
+
+		log.Printf(
+			"category=%s interactions=%.0f positive=%.0f negative=%.0f likes=%.0f unlikes=%.0f skips=%.0f positive_rate=%.2f avg_watch_ratio=%.2f",
+			category,
+			stats.count,
+			stats.positive,
+			stats.negative,
+			stats.likes,
+			stats.unlikes,
+			stats.skips,
+			positiveRate,
+			averageWatchRatio,
 		)
 	}
 
-	type scoredCandidate struct {
-		videoID string
-		score   float64
-	}
+	candidates, err := s.contentClient.ListRecommendationCandidates(
+		ctx,
+		100)
 
-	scoredCandidates := make(
-		[]scoredCandidate,
-		0,
-		len(candidates.GetVideos()),
-	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get recommendation candidates: %w", err)
+	}
+	mlCandidates := make([]ml.Candidate, 0, len(candidates.GetVideos()))
 
 	for _, candidate := range candidates.GetVideos() {
 
@@ -143,63 +212,145 @@ func (s *Server) GetRecommendations(
 			continue
 		}
 
-		categoryNames := make(
-			[]string,
-			0,
-			len(candidate.GetCategories()),
-		)
+		var historyCount float64
+		var historyPositive float64
+		var historyNegative float64
+		var historyLikes float64
+		var historyUnlikes float64
+		var historySkips float64
+		var historyWatchRatioSum float64
 
 		for _, category := range candidate.GetCategories() {
-			categoryNames = append(
-				categoryNames,
-				category.GetName(),
-			)
+			categoryName := category.GetName()
+			stats := categoryHistory[categoryName]
+			if stats == nil {
+				continue
+			}
+			historyCount += stats.count
+			historyPositive += stats.positive
+			historyNegative += stats.negative
+			historyLikes += stats.likes
+			historyUnlikes += stats.unlikes
+			historySkips += stats.skips
+			historyWatchRatioSum += stats.watchRatioSum
 		}
 
-		score := recommendation.CalculateCandidateScore(
-			categoryScores,
-			categoryNames,
-		)
+		positiveRate := 0.0
+		historyWatchRatio := 0.0
 
-		scoredCandidates = append(
-			scoredCandidates,
-			scoredCandidate{
-				videoID: videoID,
-				score:   score,
-			},
-		)
+		if historyCount > 0 {
+			positiveRate =
+				historyPositive / historyCount
+
+			historyWatchRatio =
+				historyWatchRatioSum / historyCount
+		}
+
+		categories := make([]string, 0, len(candidate.GetCategories()))
+
+		for _, category := range candidate.GetCategories() {
+			categories = append(categories, category.GetName())
+		}
+
+		mlCandidate := ml.Candidate{
+			VideoID:                     candidate.GetVideoId(),
+			DurationSeconds:             float64(candidate.GetDurationSecond()),
+			HistoryCategoryCount:        historyCount,
+			HistoryCategoryPositive:     historyPositive,
+			HistoryCategoryNegative:     historyNegative,
+			HistoryCategoryLikes:        historyLikes,
+			HistoryCategoryUnlikes:      historyUnlikes,
+			HistoryCategorySkips:        historySkips,
+			HistoryCategoryPositiveRate: positiveRate,
+			HistoryCategoryWatchRatio:   historyWatchRatio,
+			Categories:                  strings.Join(categories, ","),
+		}
+
+		mlCandidates = append(mlCandidates, mlCandidate)
+		candidateByVideoID[mlCandidate.VideoID] = mlCandidate
+	}
+	if len(mlCandidates) == 0 {
+		return s.getColdStartRecommendations(
+			ctx, limit)
+
 	}
 
-	sort.Slice(
-		scoredCandidates,
+	scoredCandidates, err := s.mlClient.ScoreCandidates(ctx, mlCandidates)
+	if err != nil {
+		return nil, fmt.Errorf("failed to score recommendation candidates: %w")
+	}
+	sort.Slice(scoredCandidates,
 		func(i, j int) bool {
-			return scoredCandidates[i].score >
-				scoredCandidates[j].score
+			return scoredCandidates[i].Score >
+				scoredCandidates[j].Score
 		},
 	)
 
-	response := &recommendationv1.GetRecommendationsResponse{
-		Videos: make(
-			[]*recommendationv1.RecommendedVideo,
-			0,
-			limit,
-		),
-	}
+	log.Printf(
+		"===== TOP %d RECOMMENDATIONS FOR USER %s =====",
+		limit,
+		req.GetUserId(),
+	)
 
-	for _, candidate := range scoredCandidates {
-
-		if int32(len(response.Videos)) >= limit {
+	for i, scored := range scoredCandidates {
+		if i >= int(limit) {
 			break
 		}
 
+		candidate, exists := candidateByVideoID[scored.VideoID]
+		if !exists {
+			continue
+		}
+
+		log.Printf(
+			"#%02d video=%s categories=%s score=%.4f history=%.0f positive=%.0f negative=%.0f likes=%.0f unlikes=%.0f skips=%.0f positive_rate=%.2f watch_ratio=%.2f",
+			i+1,
+			scored.VideoID,
+			candidate.Categories,
+			scored.Score,
+			candidate.HistoryCategoryCount,
+			candidate.HistoryCategoryPositive,
+			candidate.HistoryCategoryNegative,
+			candidate.HistoryCategoryLikes,
+			candidate.HistoryCategoryUnlikes,
+			candidate.HistoryCategorySkips,
+			candidate.HistoryCategoryPositiveRate,
+			candidate.HistoryCategoryWatchRatio,
+		)
+	}
+
+	if len(scoredCandidates) > 0 {
+		middle := len(scoredCandidates) / 2
+
+		log.Printf(
+			"ML score distribution: candidates=%d max=%.10f median=%.10f min=%.10f",
+			len(scoredCandidates),
+			scoredCandidates[0].Score,
+			scoredCandidates[middle].Score,
+			scoredCandidates[len(scoredCandidates)-1].Score,
+		)
+	}
+
+	response := &recommendationv1.GetRecommendationsResponse{
+		Videos: make([]*recommendationv1.RecommendedVideo, 0, limit),
+	}
+	for _, candidate := range scoredCandidates {
+		if int32(len(response.Videos)) >= limit {
+			break
+		}
 		response.Videos = append(
 			response.Videos,
 			&recommendationv1.RecommendedVideo{
-				VideoId: candidate.videoID,
-				Score:   candidate.score,
-			},
-		)
+				VideoId: candidate.VideoID,
+				Score:   candidate.Score,
+			})
 	}
+
+	log.Printf(
+		"generated %d ML recommendations for user %s",
+		len(response.Videos),
+		req.GetUserId(),
+	)
 
 	return response, nil
 }

@@ -11,6 +11,8 @@ type Config struct {
 	ContentServiceGRPCURL     string
 
 	RecommendationServiceToken string
+
+	MLInferenceURL string
 }
 
 func Load() Config {
@@ -31,6 +33,11 @@ func Load() Config {
 		"content-service:9080",
 	)
 
+	viper.SetDefault(
+		"ML_INFERENCE_URL",
+		"http://ml-inference:8090",
+	)
+
 	return Config{
 		GRPCPort: viper.GetString(
 			"RECOMMENDATION_SERVICE_GRPC_PORT",
@@ -46,6 +53,10 @@ func Load() Config {
 
 		RecommendationServiceToken: viper.GetString(
 			"RECOMMENDATION_SERVICE_TOKEN",
+		),
+
+		MLInferenceURL: viper.GetString(
+			"ML_INFERENCE_URL",
 		),
 	}
 }

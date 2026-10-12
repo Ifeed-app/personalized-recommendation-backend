@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	AppPort                          string
+	HTTPPort                         string
 	DBHost                           string
 	DBPort                           string
 	DBUser                           string
@@ -40,6 +41,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("EMAIL_VERIFICATION_BASE_URL", "http://localhost:8061/verify-email")
 	viper.SetDefault("EMAIL_VERIFICATION_TOKEN_TTL_MINUTES", 30)
 	viper.SetDefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
+	viper.SetDefault("HTTP_PORT", "8061")
 
 	cfg := &Config{
 		AppPort:                          viper.GetString("APP_PORT"),
@@ -55,6 +57,7 @@ func Load() (*Config, error) {
 		EmailVerificationQueue:           viper.GetString("EMAIL_VERIFICATION_QUEUE"),
 		EmailVerificationBaseURL:         viper.GetString("EMAIL_VERIFICATION_BASE_URL"),
 		EmailVerificationTokenTTLMinutes: viper.GetDuration("EMAIL_VERIFICATION_TOKEN_TTL_MINUTES"),
+		HTTPPort:                         viper.GetString("HTTP_PORT"),
 	}
 	if cfg.JWTSecret == "" {
 		return nil, fmt.Errorf("JWT_SECRET is required")

@@ -216,8 +216,8 @@ func (s *Server) GetVideoInteractionSummary(
 	likedByUser, err := s.queries.IsVideoCurrentlyLikedByUser(
 		ctx,
 		db.IsVideoCurrentlyLikedByUserParams{
-			userID,
-			videoID,
+			UserID:  userID,
+			VideoID: videoID,
 		},
 	)
 	if err != nil {

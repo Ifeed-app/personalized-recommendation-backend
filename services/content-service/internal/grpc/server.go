@@ -14,6 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Server struct {
@@ -364,6 +366,81 @@ func (s *Server) GetVideoMetadata(
 	return response, nil
 }
 
+func (s *Server) GetVideosByIds(
+	ctx context.Context,
+	req *contentv1.GetVideosByIdsRequest,
+) (*contentv1.GetVideosByIdsResponse, error) {
+
+	if len(req.GetVideoIds()) == 0 {
+		return &contentv1.GetVideosByIdsResponse{
+			Videos: []*contentv1.FeedVideo{},
+		}, nil
+	}
+
+	response := &contentv1.GetVideosByIdsResponse{
+		Videos: make(
+			[]*contentv1.FeedVideo,
+			0,
+			len(req.GetVideoIds()),
+		),
+	}
+
+	for _, videoIDString := range req.GetVideoIds() {
+
+		videoID, err := uuid.Parse(videoIDString)
+		if err != nil {
+			return nil, status.Errorf(
+				codes.InvalidArgument,
+				"invalid video id: %s",
+				videoIDString,
+			)
+		}
+
+		pgVideoID := toPgUUID(videoID)
+
+		video, err := s.queries.GetVideoByID(
+			ctx,
+			pgVideoID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to get video %s: %w",
+				videoIDString,
+				err,
+			)
+		}
+
+		videoURL, err := s.storage.PresignedObject(
+			ctx,
+			video.StorageKey,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed to create presigned url for video %s: %w",
+				videoIDString,
+				err,
+			)
+		}
+
+		response.Videos = append(
+			response.Videos,
+			&contentv1.FeedVideo{
+				Id:             videoIDString,
+				Title:          video.Title,
+				Description:    video.Description.String,
+				StroageKey:     video.StorageKey,
+				VideoUrl:       videoURL,
+				ThumbnailKey:   video.ThumbnailKey.String,
+				MimeType:       video.MimeType,
+				DurationSecond: video.DurationSeconds,
+				Status:         video.Status,
+				CreatedAt:      video.CreatedAt.Time.Format(time.RFC3339),
+			},
+		)
+	}
+
+	return response, nil
+}
 func toPgUUID(id uuid.UUID) pgtype.UUID {
 	return pgtype.UUID{
 		Bytes: id,

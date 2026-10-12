@@ -4,6 +4,7 @@ import (
 	recommendationv1 "backend-diplomski/proto/gen/recommendation/v1"
 	"backend-diplomski/services/recommendation-service/internal/client/content"
 	"backend-diplomski/services/recommendation-service/internal/client/interaction"
+	"backend-diplomski/services/recommendation-service/internal/client/ml"
 	"backend-diplomski/services/recommendation-service/internal/config"
 	recommendationgrpc "backend-diplomski/services/recommendation-service/internal/grpc"
 	"log"
@@ -49,10 +50,13 @@ func main() {
 			cfg.GRPCPort,
 			err)
 	}
+
+	mlClient := ml.NewClient(cfg.MLInferenceURL)
 	grpcServer := grpc.NewServer()
 	recommendationServer := recommendationgrpc.NewServer(
 		interactionClient,
 		contentClient,
+		mlClient,
 	)
 
 	recommendationv1.RegisterRecommendationServiceServer(

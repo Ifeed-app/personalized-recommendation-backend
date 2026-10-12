@@ -5,3 +5,5 @@ psycopg[binary]
 matplotlib
 joblib
 jupyter
+fastapi
+uvicorn[standard]

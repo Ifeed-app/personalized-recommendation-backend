@@ -773,6 +773,94 @@ func (x *ListRecommendationCandidatesResponse) GetVideos() []*RecommendationCand
 	return nil
 }
 
+type GetVideosByIdsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	VideoIds      []string               `protobuf:"bytes,1,rep,name=video_ids,json=videoIds,proto3" json:"video_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetVideosByIdsRequest) Reset() {
+	*x = GetVideosByIdsRequest{}
+	mi := &file_content_v1_content_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetVideosByIdsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetVideosByIdsRequest) ProtoMessage() {}
+
+func (x *GetVideosByIdsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_content_v1_content_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetVideosByIdsRequest.ProtoReflect.Descriptor instead.
+func (*GetVideosByIdsRequest) Descriptor() ([]byte, []int) {
+	return file_content_v1_content_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetVideosByIdsRequest) GetVideoIds() []string {
+	if x != nil {
+		return x.VideoIds
+	}
+	return nil
+}
+
+type GetVideosByIdsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Videos        []*FeedVideo           `protobuf:"bytes,1,rep,name=videos,proto3" json:"videos,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetVideosByIdsResponse) Reset() {
+	*x = GetVideosByIdsResponse{}
+	mi := &file_content_v1_content_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetVideosByIdsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetVideosByIdsResponse) ProtoMessage() {}
+
+func (x *GetVideosByIdsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_content_v1_content_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetVideosByIdsResponse.ProtoReflect.Descriptor instead.
+func (*GetVideosByIdsResponse) Descriptor() ([]byte, []int) {
+	return file_content_v1_content_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetVideosByIdsResponse) GetVideos() []*FeedVideo {
+	if x != nil {
+		return x.Videos
+	}
+	return nil
+}
+
 var File_content_v1_content_proto protoreflect.FileDescriptor
 
 const file_content_v1_content_proto_rawDesc = "" +
@@ -841,12 +929,17 @@ const file_content_v1_content_proto_rawDesc = "" +
 	"categories\x12'\n" +
 	"\x0fduration_second\x18\x03 \x01(\x05R\x0edurationSecond\"c\n" +
 	"$ListRecommendationCandidatesResponse\x12;\n" +
-	"\x06videos\x18\x01 \x03(\v2#.content.v1.RecommendationCandidateR\x06videos2\xa2\x03\n" +
+	"\x06videos\x18\x01 \x03(\v2#.content.v1.RecommendationCandidateR\x06videos\"4\n" +
+	"\x15GetVideosByIdsRequest\x12\x1b\n" +
+	"\tvideo_ids\x18\x01 \x03(\tR\bvideoIds\"G\n" +
+	"\x16GetVideosByIdsResponse\x12-\n" +
+	"\x06videos\x18\x01 \x03(\v2\x15.content.v1.FeedVideoR\x06videos2\xfb\x03\n" +
 	"\x0eContentService\x12P\n" +
 	"\vCreateVideo\x12\x1e.content.v1.CreateVideoRequest\x1a\x1f.content.v1.CreateVideoResponse\"\x00\x12Y\n" +
 	"\x0eListFeedVideos\x12!.content.v1.ListFeedVideosRequest\x1a\".content.v1.ListFeedVideosResponse\"\x00\x12_\n" +
 	"\x10GetVideoMetadata\x12#.content.v1.GetVideoMetadataRequest\x1a$.content.v1.GetVideoMetadataResponse\"\x00\x12\x81\x01\n" +
-	"\x1cListRecommendationCandidates\x12/.content.v1.ListRecommendationCandidatesRequest\x1a0.content.v1.ListRecommendationCandidatesResponseBg\n" +
+	"\x1cListRecommendationCandidates\x12/.content.v1.ListRecommendationCandidatesRequest\x1a0.content.v1.ListRecommendationCandidatesResponse\x12W\n" +
+	"\x0eGetVideosByIds\x12!.content.v1.GetVideosByIdsRequest\x1a\".content.v1.GetVideosByIdsResponseBg\n" +
 	"#com.example.feeder.proto.content.v1B\fContentProtoP\x01Z0backend-diplomski/proto/gen/content/v1;contentv1b\x06proto3"
 
 var (
@@ -861,7 +954,7 @@ func file_content_v1_content_proto_rawDescGZIP() []byte {
 	return file_content_v1_content_proto_rawDescData
 }
 
-var file_content_v1_content_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_content_v1_content_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_content_v1_content_proto_goTypes = []any{
 	(*CreateVideoRequest)(nil),                   // 0: content.v1.CreateVideoRequest
 	(*CreateVideoResponse)(nil),                  // 1: content.v1.CreateVideoResponse
@@ -875,6 +968,8 @@ var file_content_v1_content_proto_goTypes = []any{
 	(*ListRecommendationCandidatesRequest)(nil),  // 9: content.v1.ListRecommendationCandidatesRequest
 	(*RecommendationCandidate)(nil),              // 10: content.v1.RecommendationCandidate
 	(*ListRecommendationCandidatesResponse)(nil), // 11: content.v1.ListRecommendationCandidatesResponse
+	(*GetVideosByIdsRequest)(nil),                // 12: content.v1.GetVideosByIdsRequest
+	(*GetVideosByIdsResponse)(nil),               // 13: content.v1.GetVideosByIdsResponse
 }
 var file_content_v1_content_proto_depIdxs = []int32{
 	4,  // 0: content.v1.ListFeedVideosResponse.videos:type_name -> content.v1.FeedVideo
@@ -882,19 +977,22 @@ var file_content_v1_content_proto_depIdxs = []int32{
 	7,  // 2: content.v1.GetVideoMetadataResponse.tags:type_name -> content.v1.Tag
 	6,  // 3: content.v1.RecommendationCandidate.categories:type_name -> content.v1.Category
 	10, // 4: content.v1.ListRecommendationCandidatesResponse.videos:type_name -> content.v1.RecommendationCandidate
-	0,  // 5: content.v1.ContentService.CreateVideo:input_type -> content.v1.CreateVideoRequest
-	2,  // 6: content.v1.ContentService.ListFeedVideos:input_type -> content.v1.ListFeedVideosRequest
-	5,  // 7: content.v1.ContentService.GetVideoMetadata:input_type -> content.v1.GetVideoMetadataRequest
-	9,  // 8: content.v1.ContentService.ListRecommendationCandidates:input_type -> content.v1.ListRecommendationCandidatesRequest
-	1,  // 9: content.v1.ContentService.CreateVideo:output_type -> content.v1.CreateVideoResponse
-	3,  // 10: content.v1.ContentService.ListFeedVideos:output_type -> content.v1.ListFeedVideosResponse
-	8,  // 11: content.v1.ContentService.GetVideoMetadata:output_type -> content.v1.GetVideoMetadataResponse
-	11, // 12: content.v1.ContentService.ListRecommendationCandidates:output_type -> content.v1.ListRecommendationCandidatesResponse
-	9,  // [9:13] is the sub-list for method output_type
-	5,  // [5:9] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	4,  // 5: content.v1.GetVideosByIdsResponse.videos:type_name -> content.v1.FeedVideo
+	0,  // 6: content.v1.ContentService.CreateVideo:input_type -> content.v1.CreateVideoRequest
+	2,  // 7: content.v1.ContentService.ListFeedVideos:input_type -> content.v1.ListFeedVideosRequest
+	5,  // 8: content.v1.ContentService.GetVideoMetadata:input_type -> content.v1.GetVideoMetadataRequest
+	9,  // 9: content.v1.ContentService.ListRecommendationCandidates:input_type -> content.v1.ListRecommendationCandidatesRequest
+	12, // 10: content.v1.ContentService.GetVideosByIds:input_type -> content.v1.GetVideosByIdsRequest
+	1,  // 11: content.v1.ContentService.CreateVideo:output_type -> content.v1.CreateVideoResponse
+	3,  // 12: content.v1.ContentService.ListFeedVideos:output_type -> content.v1.ListFeedVideosResponse
+	8,  // 13: content.v1.ContentService.GetVideoMetadata:output_type -> content.v1.GetVideoMetadataResponse
+	11, // 14: content.v1.ContentService.ListRecommendationCandidates:output_type -> content.v1.ListRecommendationCandidatesResponse
+	13, // 15: content.v1.ContentService.GetVideosByIds:output_type -> content.v1.GetVideosByIdsResponse
+	11, // [11:16] is the sub-list for method output_type
+	6,  // [6:11] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_content_v1_content_proto_init() }
@@ -908,7 +1006,7 @@ func file_content_v1_content_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_content_v1_content_proto_rawDesc), len(file_content_v1_content_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
