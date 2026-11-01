@@ -277,7 +277,7 @@ func (s *Server) GetRecommendations(
 
 	scoredCandidates, err := s.mlClient.ScoreCandidates(ctx, mlCandidates)
 	if err != nil {
-		return nil, fmt.Errorf("failed to score recommendation candidates: %w")
+		return nil, fmt.Errorf("failed to score recommendation candidates: %w", err)
 	}
 	sort.Slice(scoredCandidates,
 		func(i, j int) bool {
