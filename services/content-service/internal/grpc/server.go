@@ -211,7 +211,7 @@ func (s *Server) ListFeedVideos(ctx context.Context, req *contentv1.ListFeedVide
 	for _, video := range videos {
 		videoURL, err := s.storage.PresignedObject(ctx, video.StorageKey)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create predesigned video url for storage key=%s: %w", err)
+			return nil, fmt.Errorf("failed to create predesigned video url for storage key=%s", err)
 		}
 		response.Videos = append(response.Videos, &contentv1.FeedVideo{
 			Id:             uuid.UUID(video.ID.Bytes).String(),
