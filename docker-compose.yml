@@ -125,7 +125,7 @@ services:
       - "${GRPC_PORT}:${GRPC_PORT}"
 
   minio:
-    image: minio/minio:latest
+    image: pgsty/minio:latest
     container_name: feeder_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -244,10 +244,23 @@ services:
       - "8090:8090"
     restart: unless-stopped
 
+  nexus:
+    image: sonatype/nexus3:latest
+    container_name: nexus
+    restart: unless-stopped
+    environment:
+      INSTALL4J_ADD_VM_PARAMS: >
+        -Xms512m
+        -Xmx1536m
+        -XX:MaxDirectMemorySize=1536m
 
-
+    ports:
+      - "8081:8081"
+    volumes:
+      - nexus_data:/nexus_data
 
 volumes:
   postgres_data:
   minio_data:
   rabbitmq_data:
+  nexus_data:
