@@ -13,7 +13,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/dbracic21-foi
+  IMAGE_NAME: ${{ github.repository_owner }}/user-service
 
 jobs:
   user-service:
