@@ -3,7 +3,7 @@ name: Backend Stage Images
 on:
   push:
     branches:
-      - develop
+      - ft/ci_setup
 
   workflow_dispatch:
 
